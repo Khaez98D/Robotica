@@ -131,6 +131,7 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/robotica/catkin_ws/build/gtest/cmake_install.cmake")
+  include("/home/robotica/catkin_ws/build/turtle_bot_4/cmake_install.cmake")
 
 endif()
 
