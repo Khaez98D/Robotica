@@ -1,3 +1,4 @@
+Velocidades;50.0;60.0
 Key.up
 Key.up
 Key.up

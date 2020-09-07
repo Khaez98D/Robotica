@@ -80,7 +80,10 @@ if __name__ == '__main__':
         print(track)
     finally:
         if guardar:
-            with open ('/home/robotica/catkin_ws/src/turtle_bot_4/results/'+recoFile,mode='w') as writer:
+            Folerpath=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            Path=os.path.join(Folerpath,'results/'+recoFile)
+            print(Path)
+            with open (Path,mode='w') as writer:
                 for k in acc:
                     writer.write("{}\n".format(k))
         # listener.stop()

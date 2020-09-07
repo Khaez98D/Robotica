@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import rospy,atexit
+import rospy,atexit,os
 import numpy as np
 from geometry_msgs.msg import Twist,Vector3
 from std_msgs.msg import Float32
@@ -23,6 +23,7 @@ class listenerNode():
         self.ax.set_ylim(-2.5,2.5)
         self.ax.grid(True)
         self.topicName='/turtlebot_position'
+        self.FolderPath=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'results/trayectoria_punto2.png')
        
         
         #Se inicia el nodo para que tome los datos de posicion y orientación
@@ -45,7 +46,7 @@ class listenerNode():
             #Inicializar grafica
             if(len(self.x)%10==0):
                 self.ax.plot(self.x[:-1],self.y[:-1],color="red",alpha=1,linewidth=2)
-                plt.savefig('/home/robotica/catkin_ws/src/turtle_bot_4/results/trayectoria_punto2.png',transparent=False)
+                plt.savefig(self.FolderPath,transparent=False)
                 plt.draw()
             return
         else:
