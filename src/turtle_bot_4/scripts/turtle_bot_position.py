@@ -1,42 +1,77 @@
 #!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
+import rospy,atexit
+import numpy as np
+from geometry_msgs.msg import Twist,Vector3
+from std_msgs.msg import Float32
+from matplotlib import pyplot as plt
+from matplotlib.animation import FuncAnimation
+      
+class listenerNode():
 
-import rospy;
-import traceback;
-import math;
-from geometry_msgs.msg import Twist;
-import matplotlib.pyplot as plt;
+    def __init__(self):
+        #Se crean arreglos para almacenar las coordenadas XYZ y la orientación
+        self.x,self.y,self.z,=[],[],[]
+        self.theta=0
+        
+        #Contador de longuitud de arreglo
+        self.length = 0
+        self.fig,self.ax = plt.subplots()
+        self.ax.set_title("Ubicacción del TurtleBot")
+        self.ax.set_xlabel("X(m)")
+        self.ax.set_ylabel("Y(m)")
+        self.ax.set_xlim(-2.5,2.5)
+        self.ax.set_ylim(-2.5,2.5)
+        self.ax.grid(True)
+        self.topicName='/turtlebot_position'
+       
+        
+        #Se inicia el nodo para que tome los datos de posicion y orientación
+        if(self.checkTopic()):
+            rospy.init_node('listener',anonymous=True)
+            rospy.Subscriber('turtlebot_position',Twist,self.updatePos)
+            plt.show()
+            rospy.spin()
+        else: return       
+        
 
-xPos = [0.0];
-yPos = [0.0];
-
-def recibido(msg):
+    #Funcion Callback para agregar datos al arrelgo de posición
+    def updatePos(self,data):
+        if(self.checkTopic()):
+            self.length+=1
+            self.x.append(data.linear.x)
+            self.y.append(data.linear.y)
+            self.z.append(data.linear.z)
+        
+            #Inicializar grafica
+            if(len(self.x)%10==0):
+                self.ax.plot(self.x[:-1],self.y[:-1],color="red",alpha=1,linewidth=2)
+                plt.savefig('/home/robotica/catkin_ws/src/turtle_bot_4/results/trayectoria_punto2.png',transparent=False)
+                plt.draw()
+            return
+        else:
+            raise Exception
+            
     
-    if msg.linear.x != xPos[-1] or msg.linear.y != yPos[-1]:
-        xPos.append(msg.linear.x);
-        yPos.append(msg.linear.y);
-        actGraph();
-
-def actGraph():
-    plt.subplot(111);
-    plt.clf();
-    plt.axis([-2.5, 2.5, -2.5, 2.5]);
-    plt.plot(xPos, yPos);
-    plt.scatter(xPos[-1], yPos[-1], s=40);
-    plt.pause(0.01);
-    #plt.savefig("/home/robotica/catkin_ws/src/turtle_bot_4/results/trayectoria_punto2.png");
+    def checkTopic(self):
+        topics=rospy.get_published_topics()
+        for topic in topics:
+            if(topic[0]==self.topicName):
+                return True      
+        return False
 
 
-def turtlePos():
-    rospy.init_node('turtle_bot_position');
-    rospy.Subscriber('turtlebot_position', Twist, recibido);
-    plt.show()
-    rospy.spin();
-    
-
-
-if __name__ == '__main__':
+        
+if __name__ == "__main__":
     try:
-        turtlePos();
-    except Exception as e:
-        print(traceback.format_exc());
+        listenerNode()
+    except Exception as err:
+        pass
+    finally:
+        pass
+        
+    
+        
+    
+    
+    
+    
