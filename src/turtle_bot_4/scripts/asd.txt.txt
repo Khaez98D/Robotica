@@ -1,7 +1,0 @@
-Velocidades;40.0;40.0
-Key.up
-Key.up
-Key.up
-Key.right
-Key.down
-Key.esc
