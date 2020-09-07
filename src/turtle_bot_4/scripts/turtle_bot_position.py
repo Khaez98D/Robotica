@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import rospy,atexit,os
-import numpy as np
 from geometry_msgs.msg import Twist,Vector3
 from std_msgs.msg import Float32
 from matplotlib import pyplot as plt
