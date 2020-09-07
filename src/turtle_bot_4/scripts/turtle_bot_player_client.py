@@ -29,9 +29,9 @@ def usage():
 def replay(lineas,vLin,vAng):
     global msgLin
     global msgAng
-    pub = rospy.Publisher('turtlebot_cmdVel', Twist, queue_size=5)
+    pub = rospy.Publisher('turtlebot_cmdVel', Twist, queue_size=10)
     rospy.init_node('turtle_bot_player')
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(50)
     i=0
     while not rospy.is_shutdown() and i<len(lineas):
         msg = Twist()
