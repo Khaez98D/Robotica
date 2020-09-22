@@ -45,47 +45,7 @@ class wheelsVel():
             data=[0 for i in range(int(lines[0]))]  #Se inicializa el arreglo para N lineas
             for i in range(1,len(lines)):
                 data[i-1] = [int(j) for j in lines[i].split()]  #Se sacan y organizan los datos
-        return data     #Retorna la estructura de datos final
-
-
-#Clase Listener para escuchar la posición del robot
-class Position():
-
-    #Función que construye el nodo PositionListener
-    def __call__(self):
-        #Se inicializa el nodo
-        rospy.Subscriber('turtlebot_position',Twist,self.updatePos)
-        self.OdometryPipe =[]
-        self.Topic=[]  
-        self.updateGraph()
-        rospy.spin()
-        return
-    
-    
-    def updatePos(self,data):
-        self.Topic.append([data.linear.x,data.linear.y])
-        pass
-
-    #Función para actualizar la grafica sacando los datos del pipe
-    def updateGraph(self):
-        global acabo #Variable global que se atualiza con el nodo que publica
-        x=None
-        plt.grid(True) #Inicializacion de la grafica
-        plt.xlabel("Posición en X (m)")
-        plt.xlabel("Posición en Y (m)")
-        x=self.OdometryPipe
-        if(len(x)%5==0):
-            pass
-        x=self.Topic
-        if(len(x)%5==0):
-            plt.plot(x[:,0],x[:,1],label='Topico') #Se grafica
-        
-    #Se muestra la grafica y se guarda
-    plt.draw()
-    plt.pause(0.01)
-    plt.legend()
-    plt.savefig('prueba.jpg')
-    plt.clf()    
+        return data     #Retorna la estructura de datos final 
 
 
 #Función para verificar la ruta de archivo, si no existe enviara exepcion
