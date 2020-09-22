@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 import sys,rospy,os
+from queue import Queue
+from threading import Lock
+from multiprocessing import Process
 import matplotlib.pyplot as plt
+from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray
+
 
 #Clase para el Talker de las velocidades lineales de las ruedas
 class wheelsVel():    
     
+    
+    def __init__(self,rutaArchivo):
+        self.rutaArchivo=rutaArchivo
+    
     #Función de inicialización
     #Param: rutaArchivo, la ruta del archivo de texto
-    def __init__(self,rutaArchivo):
+    def __call__(self):       
         #Se crea e inicializa el nodo
-        self.pub = rospy.Publisher('/turtlebot_wheelsVel',Float32MultiArray,queue_size=10)
-        rospy.init_node("turtlebot_wheelsVel",anonymous=True)
-        self.rates=rospy.Rate(10)
-        
+        self.pub = rospy.Publisher('/turtlebot_wheelsVel',Float32MultiArray,queue_size=10)          
         #Se obitienen los datos del archivo de texto
-        self.data=self.getData(rutaArchivo)
-        
+        self.data=self.getData(self.rutaArchivo)
+        self.rates=rospy.Rate(10)
         i=0 #Contador de cuantas lineas hay que leer
         while (not rospy.is_shutdown()) and i<len(self.data): #Ciclo, si i>len(data), significa que ya termino de leer el archivo
             t,tv = 0,self.data[i][2]    #Contador de tiempo y tiempo durante el cual se aplica el perfil de velocidad
@@ -27,7 +33,6 @@ class wheelsVel():
                 rospy.sleep(1)  #Se duerme durante un segundo
                 self.rates.sleep()  #Se duerme el rate al que se mandan los mensajes
             i+=1 #Se suma 1 a la linea que se leyo
-            
         self.pub.publish(Float32MultiArray(data=[0,0])) # Al acabar se manda este mensaje para parar el robot
     
     
@@ -41,7 +46,48 @@ class wheelsVel():
             for i in range(1,len(lines)):
                 data[i-1] = [int(j) for j in lines[i].split()]  #Se sacan y organizan los datos
         return data     #Retorna la estructura de datos final
+
+
+#Clase Listener para escuchar la posición del robot
+class Position():
+
+    #Función que construye el nodo PositionListener
+    def __call__(self):
+        #Se inicializa el nodo
+        rospy.Subscriber('turtlebot_position',Twist,self.updatePos)
+        self.OdometryPipe =[]
+        self.Topic=[]  
+        self.updateGraph()
+        rospy.spin()
+        return
+    
+    
+    def updatePos(self,data):
+        self.Topic.append([data.linear.x,data.linear.y])
+        pass
+
+    #Función para actualizar la grafica sacando los datos del pipe
+    def updateGraph(self):
+        global acabo #Variable global que se atualiza con el nodo que publica
+        x=None
+        plt.grid(True) #Inicializacion de la grafica
+        plt.xlabel("Posición en X (m)")
+        plt.xlabel("Posición en Y (m)")
+        x=self.OdometryPipe
+        if(len(x)%5==0):
+            pass
+        x=self.Topic
+        if(len(x)%5==0):
+            plt.plot(x[:,0],x[:,1],label='Topico') #Se grafica
         
+    #Se muestra la grafica y se guarda
+    plt.draw()
+    plt.pause(0.01)
+    plt.legend()
+    plt.savefig('prueba.jpg')
+    plt.clf()    
+
+
 #Función para verificar la ruta de archivo, si no existe enviara exepcion
 #Param: nombreArchivo, el nombre del archivo
 #return: Ruta absoluta del archivo
@@ -53,19 +99,25 @@ def verificarRutaArchivo(nombreArchivo):
         return ruta
     else:
         raise FileExistsError
-            
+
+
+
+#Metodo Main           
 if __name__ == "__main__":
+    ruta=''
+    rospy.init_node('MovementNode',anonymous=True)
     try:
         if len(sys.argv)==2:   #La segunda posicion del arreglo es el nombre del archivo
             ruta=verificarRutaArchivo(sys.argv[1])  #Se encuentra la ruta al archivo
-            publisher = wheelsVel(ruta)     #Se inicializa el nodo Publisher
-        
+            x=wheelsVel(ruta)
+            x()     
+            
         else: 
             raise FileExistsError #Se genera error si el archivo no existe
-        
-    
     #Excepts para manejo de los errores
     except FileExistsError:
         print("El nombre del archivo no es valido")
     except rospy.ROSInterruptException:
         print("Se interrumpio ROS")
+
+
