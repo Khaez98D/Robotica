@@ -17,8 +17,6 @@ class PublisherListenerNode():
         self.errX,self.errY=[],[]                   #Se crean arreglos para guardar los errores
         self.time,self.time0=[],0                   #Arreglo para almacenar el tiempo
         self.fig,self.ax = plt.subplots()           #Figura para graficar la posición
-        self.fig2,self.ax2 = plt.subplots()         #Figura para graficar el error
-        
         self.pub = rospy.Publisher('/turtlebot_wheelsVel',Float32MultiArray,queue_size=10)     #Publisher del nodo
         rospy.Subscriber('turtlebot_position',Twist,self.callbackPosition)                           #Listener del nodo
         rospy.Subscriber('/simulationTime',Float32,self.callbackTime)
@@ -41,6 +39,7 @@ class PublisherListenerNode():
         self.ax.grid(True)
         plt.ion()
         plt.show()
+        plt.close(self.fig2)
         #Se duerme un segundo la grafica y rospy para poder que se inicalice corretamente
         plt.pause(1)
         rospy.sleep(1)
@@ -54,7 +53,9 @@ class PublisherListenerNode():
                 aux+=1
                 plt.pause(1/100)    #FrameRate para actualizar la graficac
             self.publicar()         #Se publica el mensaje
+        print("Se va a mostrar la grafica de error")
         plt.savefig(self.G1Path)
+        
     
     
     #Metodo para publicar el mensaje
@@ -165,7 +166,15 @@ if __name__ == "__main__":
             ruta=verificarRutaArchivo(sys.argv[1])  #Se encuentra la ruta al archivo
             print("El nombre del archivo es:", ruta)
             x=PublisherListenerNode(ruta)
-            x()   
+            x()
+            #Espacio para graficar el error
+            #plt.plot(x.time,x.errX,marker="x",color="green",label="Error en eje X")
+            #plt.plot(x.time,x.errY,marker="+",color="green",label="Error en eje Y")
+            #plt.grid(True)
+            #plt.xlabel("Tiempo de simulación (s)")
+            #plt.ylabel("Error de medición")
+            #plt.tilte("Error en el tiempo")
+            #plt.savefig(x.G2Path)    
         else: 
             raise FileExistsError #Se genera error si el archivo no existe
     #Excepts para manejo de los errores
