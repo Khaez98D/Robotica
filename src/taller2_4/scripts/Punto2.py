@@ -17,7 +17,7 @@ class PublisherListenerNode():
         self.errX,self.errY=[],[]                   #Se crean arreglos para guardar los errores
         self.fig,self.ax = plt.subplots()           #Figura para graficar la posición
         self.pub = rospy.Publisher('/turtlebot_wheelsVel',Float32MultiArray,queue_size=10)     #Publisher del nodo
-        rospy.Subscriber('turtlebot_position',Twist,self.actualizar)                           #Listener del nodo
+        rospy.Subscriber('turtlebot_position',Twist,self.callbackPosition)                           #Listener del nodo
         self.end=False                              #Variable que indica si el sistema acabo
         return
      
@@ -35,9 +35,15 @@ class PublisherListenerNode():
         self.ax.grid(True)
         plt.ion()
         plt.show()
+        plt.pause(1)
+        rospy.sleep(1)
+        print("Va a comenzar el movimiento del robot")
         while (not rospy.is_shutdown()) and (not self.end):
+            self.actualizar()
+            plt.pause(1/100)
             self.publicar()
-            rospy.sleep(0.1)
+            self.actualizar()
+            plt.pause(1/100)
         print("Salio")
         
     def publicar(self):
@@ -48,28 +54,37 @@ class PublisherListenerNode():
                 t,tv = 0,self.data[i][2]    #Contador de tiempo y tiempo durante el cual se aplica el perfil de velocidad
                 print("Se va a mandar el mensaje:", x[0:2])
                 while t<tv:
+                    self.actualizar()
+                    plt.pause(1/100)
                     self.pub.publish(Float32MultiArray(data=x[0:2])) #Se publica el mensaje
                     t+=1 #Sube uno el contador de tiempo
                     rospy.sleep(1)  #Se duerme durante un segundo
                     self.rate.sleep()  #Se duerme el rate al que se mandan los mensajes
+                    self.actualizar()
+                    plt.pause(1/100)
                 self.n-=1   #Se resta 1 a las lineas totales
             else:
                 self.end=True
             return
         finally:
+            self.actualizar()
+            plt.pause(1/100)
             self.pub.publish(Float32MultiArray(data=np.array([0,0])))
     
-    def actualizar(self,data):
-        plt.pause(1)
+    
+    def callbackPosition(self,data):
         self.xT.append(data.linear.x)   #Se agregan el dato leido por el topico
         self.yT.append(data.linear.y)
         #odometria()                    #Se hace el calculo por odometria
         #self.errX.append(abs(self.xT[-1]-self.xO[-1]))      #Se agregan los errores
         #self.errY.append(abs(self.yT[-1]-self.yO[-1]))
-        if(len(self.xT)%5==0 and len(self.xT)>0):
-            self.ax.scatter(self.xT[:-1],self.yT[:-1],label="Posición obtenida del topico",marker=".",color="blue")
+        
+    
+    def actualizar(self):  
+        if(len(self.xT)%2==0 and len(self.xT)>0):
+            self.ax.scatter(self.xT,self.yT,label="Posición obtenida del topico",marker=".",color="blue")
             plt.draw()
-        if(len(self.xO)%5==0 and len(self.xO)>0):
+        if(len(self.xO)>0):
             self.ax.scatter(self.xO,self.yO,label="Posición obtenida por Odometria",marker=".",color="red")
             plt.draw()
         return
