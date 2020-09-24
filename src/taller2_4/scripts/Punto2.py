@@ -39,7 +39,6 @@ class PublisherListenerNode():
         self.ax.grid(True)
         plt.ion()
         plt.show()
-        plt.close(self.fig2)
         #Se duerme un segundo la grafica y rospy para poder que se inicalice corretamente
         plt.pause(1)
         rospy.sleep(1)
