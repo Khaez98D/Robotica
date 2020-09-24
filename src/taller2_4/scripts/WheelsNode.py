@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 import sys,rospy,os
-from queue import Queue
-from threading import Lock
-from multiprocessing import Process
 import matplotlib.pyplot as plt
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray

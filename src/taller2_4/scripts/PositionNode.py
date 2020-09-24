@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 import sys,rospy,os
-from queue import Queue
-from threading import Lock
-from multiprocessing import Process
 import matplotlib.pyplot as plt
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray
@@ -28,7 +25,6 @@ class Position():
 
     #Función para actualizar la grafica sacando los datos del pipe
     def updateGraph(self):
-        global acabo #Variable global que se atualiza con el nodo que publica
         x=None
         plt.grid(True) #Inicializacion de la grafica
         plt.xlabel("Posición en X (m)")
@@ -38,7 +34,7 @@ class Position():
             pass
         x=self.Topic
         if(len(x)%5==0):
-            plt.plot(x[:,0],x[:,1],label='Topico') #Se grafica
+            plt.plot(x[:,0],x[:,1],label='Topico',marker="-o-") #Se grafica
         
     #Se muestra la grafica y se guarda
     plt.draw()
