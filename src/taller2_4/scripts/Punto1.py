@@ -49,12 +49,17 @@ if __name__ == '__main__':
     
     #Grafica literal A 
     plt.figure(1)
+    plt.suptitle(r'Mediciones del Laser desde el marco de refencia del laser')
+    plt.subplot(121)
     plt.scatter(xL,yL)
+    plt.grid()
     plt.xlabel(r'Posición X (m)')
     plt.ylabel(r'Posición Y (m)')
-    plt.title(r'Mediciones del Laser desde el marco de refencia del laser')
-    plt.grid()
+    plt.subplot(122,projection='polar')
+    plt.scatter(theta,laserdata)
+    plt.xlim([-90*np.pi/180,90*np.pi/180])
     plt.savefig(os.path.join(pathDirectorio,'grafica1A.png'))
+
 
 
 
