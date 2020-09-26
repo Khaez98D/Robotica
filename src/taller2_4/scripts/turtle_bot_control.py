@@ -24,13 +24,12 @@ class Control:
 		self.orie = [0.0];			#Orientación actual del robot en el marco inercial
 		self.xPosE = [0.0];			#Posición estimada X del robot en el marco inercial
 		self.yPosE = [0.0];			#Posición estimada Y del robot en el marco inercial
-		self.orieE = [0.0];			#Orientación estimada del robot en el marco inercial
+		self.orieE = [-0.7854];		#Orientación estimada del robot en el marco inercial
 		self.errX = [-pPosF[0]];	#Error de posición X del robot
 		self.errY = [-pPosF[1]];	#Error de posición Y del robot
 		self.errTh = [-pPosF[2]];	#Error de orientación del robot
-		self.errTi = [0.0];			#Tiempo en los que se calculó el error
 		self.simTime = [0.0];		#Tiempo de simulación leído de V-REP
-		self.antTime = 0.0;			#Último tiempo con el que se calculo dt
+		self.actTime = 0.0;			#Tiempo actual de simulación
 		self.acabo = False;			#Determina si ha llegado a la posición deseada
 
 		#Iniciar el nodo de ROS
@@ -45,21 +44,51 @@ class Control:
 		rospy.Subscriber('turtlebot_orientation', Float32, self.getOri);
 		rospy.Subscriber('simulationTime', Float32, self.getTime);
 
-		#Actualizar tiempo para compensar por el tiempo de inicio del nodo
-		self.antTime = self.simTime[-1];
-
-		#Iniciar thread encargado del control del robot
-		_thread.start_new_thread(self.controlarRobot, ());
-
 		#Crear figura para graficar la posición en tiempo real
 		self.posPlot = plt.figure();
 		self.ax1 = self.posPlot.add_subplot(1,1,1);
 		livePlot = animation.FuncAnimation(self.posPlot, self.actPlot, interval=200);
 
-		#Dejar nodo a la escucha de sus subcripciones
+		#Actualizar tiempo para compensar por el tiempo de inicio del nodo
+		self.simTime.append(self.actTime);
+
+		#Iniciar thread encargado del control del robot
+		_thread.start_new_thread(self.controlarRobot, ());
+
+		#Dejar nodo a la escucha de sus subcripciones pero evita ocupar tiempo de procesameinto
+		rospy.sleep(0.2);
 		plt.show();
-		print("Aqui");
-		rospy.spin();
+
+		if self.acabo:
+			#Graficar error de posición
+			errPlot = plt.figure(figsize=(8,6));
+			ax2 = errPlot.add_subplot(3,1,1);
+			ax3 = errPlot.add_subplot(3,1,2);
+			ax4 = errPlot.add_subplot(3,1,3);
+
+			self.simTime.pop();
+
+			ax2.plot(self.simTime, self.errX);
+			ax3.plot(self.simTime, self.errY);
+			ax4.plot(self.simTime, self.errTh);
+
+			#Formato de gráficas
+			ax2.set_title('Error de posición en X durante la trayectoria');
+			ax2.set_xlabel('Tiempo [s]');
+			ax2.set_ylabel('Error X [m]');
+
+			ax3.set_title('Error de posición en Y durante la trayectoria');
+			ax3.set_xlabel('Tiempo [s]');
+			ax3.set_ylabel('Error Y [m]');
+
+			ax4.set_title('Error de orientación durante la trayectoria');
+			ax4.set_xlabel('Tiempo [s]');
+			ax4.set_ylabel('Error [rad]');
+
+			plt.subplots_adjust(top = 0, bottom=0, hspace=1.5, wspace=1.5);
+			errPlot.savefig("error_punto4.png");
+			plt.show();
+
 		
 
 
@@ -76,9 +105,7 @@ class Control:
 
 	#Método encargado de actualizar el tiempo de simulación
 	def getTime(self, msg):
-		if msg.data != self.simTime[-1]:
-			self.simTime.append(msg.data);
-
+		self.actTime = msg.data;
 
 	#Método encargado de actualizar la gráfica de posición del robot
 	def actPlot(self, i):
@@ -118,29 +145,35 @@ class Control:
 			msg = Twist();
 
 			#Constantes para el control de posición
-			Kp = 0.48;
+			Kp = 0.47;
 			Ka = 0.5;
 			Kb = -0.5;
 
 			#Distancias a recorrer en ambos ejes
-			dx = self.posF[0]-self.xPos[-1];
-			dy = self.posF[1]-self.yPos[-1];
+			dx = self.posF[0] - self.xPos[-1];
+			dy = self.posF[1] - self.yPos[-1];
+
+			#Calcular el error
+			self.errX.append(abs(dx));
+			self.errY.append(abs(dy));
+			self.errTh.append(abs(self.orie[-1] - self.posF[2]));
 
 			#Calcular errores de orientación a, b y error de posición p
 			a = math.atan2(dy, dx) - self.orie[-1];
 			p = math.sqrt(dx**2 + dy**2);
-			b = - a - self.orie[-1];
+			b = self.posF[2] - self.orie[-1];
 
 	    	#Estimación de la etapa de control
 			errThre = 0.15;
-			controlState = 2;
-			if abs(a) >= errThre:
+			controlState = 3;
+			if abs(a) >= errThre and abs(p) >= errThre:
 				controlState = 0;
-			elif abs(p) >= errThre:
+			if abs(p) >= errThre and abs(a) <= errThre:
 				controlState = 1;
-			elif abs(b) >= errThre:
+			if abs(b) >= errThre and abs(p) <= errThre:
 				controlState = 2;
-			else:
+
+			if abs(p) <= errThre and abs(b) <= errThre:
 				self.acabo = True;
 
 
@@ -152,15 +185,17 @@ class Control:
 			#VelocidadAngular de a = Kp*Sin(a) - Ka*a - Kb*b
 			if controlState == 0:
 				msg.linear.x = linVel;
-				angVel = -Kp*math.sin(a) + Ka*a + Kb*b;
-				if abs(angVel) < 0.1:
-					angVel = angVel/abs(angVel) * 0.1;
+				angVel = -Kp*math.sin(a) + Ka*a# + Kb*b;
+				if abs(angVel) < 0.4:
+					angVel = angVel/abs(angVel) * 0.4;
 				msg.angular.z = angVel;
 
 		    #Etapa 2 - Control de distancia hasta punto final
 		    #Velocidad lineal p = -Kp*p*Cos(a)
 			if controlState == 1:
 				linVel = Kp*p*math.cos(a);
+				if abs(linVel) < 0.3:
+					linVel = linVel/abs(linVel) * 0.3;
 				msg.linear.x = linVel;
 				msg.angular.z = angVel;
 
@@ -168,25 +203,35 @@ class Control:
 		    #Velocidad lineal de b = -Kp*Sin(a)
 			if controlState == 2:
 				msg.linear.x = linVel;
-				angVel = -Kb*(self.posF[0]-self.orie[-1]);
-				if abs(angVel) < 0.1:
-					angVel = angVel/abs(angVel) * 0.1;
+				angVel = Kp*math.sin(b) - Kb*b;
+				if abs(angVel) < 0.4:
+					angVel = angVel/abs(angVel) * 0.4;
 				msg.angular.z = angVel;
 
+			#Si ha finalizado envía un comando para deternerse
+			if self.acabo:
+				msg.linear.x = linVel;
+				msg.angular.z = angVel;
 
 			#Calcular posición estimada del robot
+			self.simTime.append(self.actTime);
 			self.estimarPos(linVel, angVel, self.xPosE[-1], self.yPosE[-1], self.orieE[-1]);
 
-		    #Enviar comando de control
+		    #Enviar comando de control y comprobar si ya ha acabado
 			self.pub.publish(msg);
+			if self.acabo:
+				break;
 			self.rate.sleep();
+
+		#Guardar gráfica de trayectoria
+		self.posPlot.savefig('./trayectoria_punto4.png');
+		plt.close();
 
 
 	#Método encargado de calcular la posición estimada del robot para el perfil de velocidades dado
 	def estimarPos(self, linVel, angVel, x, y, th):
 		#dt de estimación
-		dt = self.simTime[-1] - self.antTime;	# [s]
-		self.antTime = self.simTime[-1];
+		dt = self.simTime[-1] - self.simTime[-2];	# [s]
 
 		#Actualización de psoición estimada por Integración Numérica
 		self.xPosE.append(x + linVel * math.cos(th) * dt);
