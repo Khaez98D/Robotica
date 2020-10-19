@@ -1,0 +1,8 @@
+prefix=/home/robotica/catkin_ws/install
+
+Name: small_size_wrapper
+Description: Description of small_size_wrapper
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy std_msgs

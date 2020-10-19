@@ -1,2 +1,2 @@
-turtle_bot_4
+small-size-bridge:taller2_4:taller3_4:turtle_bot_4
 -DCATKIN_DEVEL_PREFIX=/home/robotica/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/robotica/catkin_ws/install -G Unix Makefiles

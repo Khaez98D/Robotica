@@ -308,6 +308,9 @@ gennodejs_DIR:PATH=/opt/ros/melodic/share/gennodejs/cmake
 //The directory containing a CMake configuration file for genpy.
 genpy_DIR:PATH=/opt/ros/melodic/share/genpy/cmake
 
+//The directory containing a CMake configuration file for geometry_msgs.
+geometry_msgs_DIR:PATH=/opt/ros/melodic/share/geometry_msgs/cmake
+
 //Value Computed by CMake
 gmock_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/gtest/googlemock
 
@@ -387,8 +390,29 @@ rospy_DIR:PATH=/opt/ros/melodic/share/rospy/cmake
 //The directory containing a CMake configuration file for rostime.
 rostime_DIR:PATH=/opt/ros/melodic/share/rostime/cmake
 
+//Value Computed by CMake
+small_size_wrapper_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/small-size-bridge
+
+//Value Computed by CMake
+small_size_wrapper_SOURCE_DIR:STATIC=/home/robotica/catkin_ws/src/small-size-bridge
+
+//The directory containing a CMake configuration file for std_mgs.
+std_mgs_DIR:PATH=std_mgs_DIR-NOTFOUND
+
 //The directory containing a CMake configuration file for std_msgs.
 std_msgs_DIR:PATH=/opt/ros/melodic/share/std_msgs/cmake
+
+//Value Computed by CMake
+taller2_4_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/taller2_4
+
+//Value Computed by CMake
+taller2_4_SOURCE_DIR:STATIC=/home/robotica/catkin_ws/src/taller2_4
+
+//Value Computed by CMake
+taller3_4_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/taller3_4
+
+//Value Computed by CMake
+taller3_4_SOURCE_DIR:STATIC=/home/robotica/catkin_ws/src/taller3_4
 
 //Value Computed by CMake
 turtle_bot_4_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/turtle_bot_4
@@ -509,7 +533,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=5
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=8
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

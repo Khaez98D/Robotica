@@ -1,0 +1,8 @@
+prefix=/home/robotica/catkin_ws/devel
+
+Name: taller2_4
+Description: Description of taller2_4
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

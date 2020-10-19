@@ -7,9 +7,10 @@ NOVALIDO='El archivo no existe'
 
 def rutaArchivo(req):
     print('Se esta buscando el arhivo con nombre [%s]' %req.nombre)
-    existe = os.path.isfile('/home/robotica/catkin_ws/src/turtle_bot_4/results/%s.txt' %req.nombre)
+    path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'results/%s.txt'%req.nombre)
+    existe = os.path.isfile(path)
     if existe:
-        return '/home/robotica/catkin_ws/src/turtle_bot_4/results/%s.txt' %req.nombre
+        return path
     else:
         return NOVALIDO
 
