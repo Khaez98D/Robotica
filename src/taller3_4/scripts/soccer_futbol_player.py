@@ -88,14 +88,15 @@ class soccerRobot():
         #En este loop se ejecuta el algoritmo de control
         while not (rospy.is_shutdown() or self.end):
             self.control()
-            plt.pause(1/100)    #Se actualiza la grafica
             plt.draw()
+            plt.pause(1/100)    #Se actualiza la grafica
             self.rate.sleep()
             
         print("Termino la ejecución, se va a guardar la grafica")   #Notificación a consola
         self.pub[1].publish(Twist())
-        plt.close()
         plt.savefig(self.path)  #Se guarda la grafica
+        plt.close()
+        
         
     
     def initPlot(self):
@@ -160,18 +161,40 @@ class soccerRobot():
         print('Arco donde anotar: ',self.posGoal)
         bdx,bdy = self.posGoal[0][0] - self.ballPos[0],self.posGoal[0][1] - self.ballPos[1] #Se calculan las componentes de un vector arco-pelota
         bangle = math.atan2(bdy,bdx)  #Dirección del vector, esta sera la orientación final del robot. Repsuesta en radianes desde -pi hasta pi
-        if bangle<0:
-            bangle += 2*math.pi
-        deltaError=0.10
+        deltaError=0.075
         msg = Twist()
         
         #Posición del robot y orientacion
+        posBall = self.ballPos
         robotPos = self.robotPos[-1][0:2]
         robotOr = self.robotPos[-1][2]
-        dr= -0.1
-        if not self.cancha:
-            dr = 0.5   #Distancia que va a haber entre el robot y la pelota
-        posF= [i+dr for i in self.ballPos]  #Posicion de la pelota, se le resta dr para que el robot no la choque
+        print('Posición balon: ',posBall)
+        
+        #Casos sencillos
+        #Se va a determinar la posicion final del robot
+        dr=0.25
+        posF=[0,0]
+        a = math.pi-abs(bangle)
+        if posBall[0]>=0 and posBall[1]>=0:
+            print('Caso 1')
+            posF[0] = posBall[0]+dr*math.cos(a)
+            posF[1] = posBall[1]+dr*math.sin(a)
+        elif posBall[0]>=0 and posBall[1]<0:
+            print('Caso 2')
+            posF[0] = posBall[0]+dr*math.cos(a)
+            posF[1] = posBall[1]-dr*math.sin(a)
+        elif posBall[0]<0 and posBall[1]>=0:
+            print('Caso 3')
+            posF[0] = posBall[0]+dr*math.cos(a)
+            posF[1] = posBall[1]+dr*math.sin(a)
+        elif posBall[0]<0 and posBall[1]<0:
+            print('Caso 4')
+            posF[0] = posBall[0]+dr*math.cos(a)
+            posF[1] = posBall[1]-dr*math.sin(a)
+
+        print('Posición Destino: ',posF)
+        
+        
         dx = posF[0]-robotPos[0]
         dy = posF[1]-robotPos[1] #Componentes del vector del robot a la pelota
         
@@ -184,9 +207,7 @@ class soccerRobot():
         erS1= robotOr #Error etapa 1
         erS2 = dx       #Errores etapa 2 y 3
         erS3 = dy
-        erS4=0
-        if robotOr<0:
-            erS4=robotOr+2*math.pi-bangle  #Error etapa 4
+        erS4=robotOr-bangle  #Error etapa 4
         step= -10
         
         #Se determina en que etapa de control esta
@@ -228,6 +249,6 @@ class soccerRobot():
         
     
 if __name__=="__main__":
-    x = soccerRobot([0.25,0.25,0.5])
+    x = soccerRobot([0.25,0.25,0.1])
     x()
     
