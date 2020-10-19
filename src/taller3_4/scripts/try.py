@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import cv2;
 import time;
 import sys;
+import os;
 import math;
 import numpy as np;
 
@@ -12,20 +13,17 @@ class futVideo:
 
     def __init__(self, videoFile):
         #Obtener primer frame del video
-        vid = cv2.VideoCapture(videoFile);
+        path = os.path.abspath(__file__).replace("scripts/"+__file__, "docs/"+videoFile);
+        vid = cv2.VideoCapture(path);
         _, fFrame = vid.read();
         vid.release();
 
-        #Está implementado un algoritmo para obtener la trasformación automáticamente, o se realiza manual
-        ans = input("Quiere que se realice la selección automática de esquinas? [Y/n]:  ");
-        if ans == 'y' or ans == 'Y':
-            self.autoSelecEsquinas();
-        else:
-            #Obtener la Matriz de transformación de perspectiva (M) de manera manual
-            M = self.selecEsquinas(fFrame);
+        #Obtener la Matriz de transformación de perspectiva (M) de manera manual seleccionando
+        # las esquinas de la cancha
+        M = self.selecEsquinas(fFrame);
 
         #Procesar video para guardar con las adiciones de los números de cada jugador
-        self.procesVideo(videoFile, M);
+        self.procesVideo(path, M);
 
     def selecEsquinas(self, frame):
         #Reescalar imagen para dimensión de 900x600
@@ -61,45 +59,15 @@ class futVideo:
         return M;
         # dst = cv2.warpPerspective(reFrame, M, (900,600));
 
-    def autoSelecEsquinas(self):
-        #Color blanco de las líneas del campo [179,13,255]
-        # hsvBlanco = np.array([ [50,25,180], [70,40,255] ], np.float32);
-        hsvBlanco = np.array([ [42,0,202], [81,53,241] ], np.float32);
 
-        #Máscara para blanco
-        hsv = cv2.cvtColor(self.img, cv2.COLOR_BGR2HSV);
-        while True:
-            cv2.imshow("imgWinName", self.img);
-            if cv2.waitKey(20) == 27:
-                cv2.destroyAllWindows();
-                break;
-        mask = cv2.inRange(hsv, hsvBlanco[0], hsvBlanco[1]);
-        # mask = cv2.erode(mask, None, iterations=1);
-        mask = cv2.dilate(mask, None, iterations=5);
-
-        while True:
-            cv2.imshow("imgWinName", mask);
-            if cv2.waitKey(20) == 27:
-                cv2.destroyAllWindows();
-                break;
-
-        #Buscar contornos
-        cnts, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
-        c = max(cnts, key=cv2.contourArea);
-        x1, y1, h, w = cv2.boundingRect(c);
-        ((x, y), radius) = cv2.minEnclosingCircle(c);
-        cv2.circle(mask, (int(x), int(y)), 10, (52, 232, 235), 2);
-        cv2.circle(mask, (int(x1), int(y1)), 10, (52, 232, 235), 2);
-        print("{}  {}".format(h,w));
-        while True:
-            cv2.imshow("imgWinName", mask);
-            if cv2.waitKey(20) == 27:
-                cv2.destroyAllWindows();
-                break;
-
+    # Algoritmo para colocar los números de cada jugador sobre el video y guardar el resultado
     def procesVideo(self, videoFile, M):
         #Abrir video
         vid = cv2.VideoCapture(videoFile);
+
+        #Definir codificación para guardar video y ruta de salida
+        pathS = videoFile.replace("docs/", "results/");
+        out = cv2.VideoWriter(pathS,0x7634706d, 30.0, (900,600));
 
         #Colores HSV de los equipos y de los núemros para las máscaras
         hsvAzul = np.array([ [110,180,180], [125,255,255] ], np.float32);
@@ -231,16 +199,23 @@ class futVideo:
                                 cv2.putText(frame,'3',(xAm+5,yAm-5), font, 1,(0,255,255),2);
 
 
+                #Guardar frame en el video de salida
+                out.write(frame);
+
+
+                #Mostrar video con las adiciones 
                 cv2.imshow("Video " + videoFile, frame);
 
-                if cv2.waitKey(15) == 27:
+                if cv2.waitKey(20) == 27:
                     cv2.destroyAllWindows();
                     break;
             else:
                 break;
 
-        #Cerrar video
+
+        #Cerrar video y salida
         vid.release();
+        out.release();
         cv2.destroyAllWindows();
 
 
