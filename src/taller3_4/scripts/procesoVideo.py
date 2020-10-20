@@ -13,7 +13,8 @@ class futVideo:
 
     def __init__(self, videoFile):
         #Obtener primer frame del video
-        path = os.path.abspath(__file__).replace("scripts/"+__file__, "docs/"+videoFile);
+        sep = os.path.sep;
+        path = os.path.abspath(__file__).replace("scripts"+sep+__file__, "docs"+sep+args[1]);
         vid = cv2.VideoCapture(path);
         _, fFrame = vid.read();
         vid.release();
@@ -66,8 +67,9 @@ class futVideo:
         vid = cv2.VideoCapture(videoFile);
 
         #Definir codificación para guardar video y ruta de salida
-        pathS = videoFile.replace("docs/", "results/");
-        out = cv2.VideoWriter(pathS,0x7634706d, 30.0, (900,600));
+        sep = os.path.sep;
+        pathS = videoFile.replace("docs"+sep, "results"+sep).replace(".mp4", "-res.mp4");
+        out = cv2.VideoWriter(pathS, 0x7634706d, 30.0, (900,600));
 
         #Colores HSV de los equipos y de los núemros para las máscaras
         hsvAzul = np.array([ [110,180,180], [125,255,255] ], np.float32);
@@ -203,7 +205,7 @@ class futVideo:
                 out.write(frame);
 
 
-                #Mostrar video con las adiciones 
+                #Mostrar video con las adiciones
                 cv2.imshow("Video " + videoFile, frame);
 
                 if cv2.waitKey(20) == 27:
