@@ -19,13 +19,14 @@ class controlNode():
         self.nombre = 'Senecabot_Position_Controller'
 
         #TPublisher
-        self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=10)
+        self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=70)
         rospy.Subscriber('odom',Odometry,self.odomCallBack)
 
         #Posicion del robot. X y Y son lineares. Z es angular
         self.x = []
         self.y = []
         self.z = []
+        self.c = 1;
 
         #Constantes para control del robot
         assert  len(K)==2,"El arreglo de constantes de control no posee exactamente 2 valores" 
@@ -35,7 +36,7 @@ class controlNode():
         self.end = False
 
 
-        assert len(posF)==3,"La posición final no tiene dos entradas"
+        assert len(posF)==3,"La posición final no tiene 3 entradas"
         assert all(isinstance(x,(float,int)) for x in posF),"Los datos ingresados no son numericos"
         
         '''
@@ -59,7 +60,7 @@ class controlNode():
         """
         rospy.loginfo("Se iniciara el Nodo")
         rospy.init_node(self.nombre,anonymous=True)       #Inicializacion del Nodo
-        self.rate= rospy.Rate(10)
+        self.rate= rospy.Rate(5)
 
         #En este loop se ejecuta el algoritmo de control
         while not (rospy.is_shutdown() or self.end):
@@ -86,7 +87,7 @@ class controlNode():
         """
         msg = Twist()    #Se ccrea el mensaje de odometria
         Kp,Kb = self.K      #Se obtienen las constantes
-        deltaError=0.075    #Se define las constantes de control
+        deltaError=0.05    #Se define las constantes de control
         pos = self.posF    #Se obtiene la posición Final
         X,Y,Z=self.x[-1],self.y[-1],self.z[-1]   #Se obtiene las posiciones actuales del robot
         dx = pos[0]-X    #Diferencia en X
@@ -94,29 +95,38 @@ class controlNode():
         beta = -Z-posF[2]   #Diferenia angulo cerrado
         controlState=-1     #Estado de control
 
-        print('Pose actual')
-        print(X,Y)
+        #print('Pose actual')
+        #print(X,Y,Z)
 
-        if(abs(dx)>=deltaError):
+        
+        if(abs(dy)>=deltaError) and self.c%2 == 0:
+            print("Estado Y")
+            #msg.linear.x=Kp*dx
+            msg.linear.y=Kp*dy
+            #msg.angular.z=-Kb*beta
+            self.c += 1;
+        elif(abs(dx)>=deltaError):
             print("Estado X")
             msg.linear.x=Kp*dx
-        elif(abs(dy)>=deltaError):
-            print("Estado Y")
-            msg.linear.y=Kp*dy
-        elif(abs(beta)>=deltaError):
-            print("Estado W")
-            msg.angular.z=-Kb*beta
-        else:
-            self.end=True
+            #msg.linear.y=Kp*dy
+            #msg.angular.z=-Kb*beta
+            self.c += 1;
+        elif(abs(dx)<=deltaError) and (abs(dy)<=deltaError):
+            if(abs(beta)>=deltaError):
+                print("Estado W")
+                msg.angular.z=-Kb*abs(beta)
+                self.c += 1;
+            else:
+                self.end=True
         
-        rospy.loginfo(msg)  
+        #rospy.loginfo(msg)  
         self.pub.publish(msg)
 
 if __name__=='__main__':
     try:
         if len(sys.argv)==2:
             posF = [float(i) for i in sys.argv[1].replace('[','').replace(']','').split(',')]
-            K= [1.5,0.5]
+            K = [3,2.5]
             nodo = controlNode(K,posF)
             nodo()
         else:
