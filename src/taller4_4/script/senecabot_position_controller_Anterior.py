@@ -19,14 +19,13 @@ class controlNode():
         self.nombre = 'Senecabot_Position_Controller'
 
         #TPublisher
-        self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=70)
+        self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=10)
         rospy.Subscriber('odom',Odometry,self.odomCallBack)
 
         #Posicion del robot. X y Y son lineares. Z es angular
         self.x = []
         self.y = []
         self.z = []
-        self.c = 1;
 
         #Constantes para control del robot
         assert  len(K)==2,"El arreglo de constantes de control no posee exactamente 2 valores" 
@@ -36,10 +35,9 @@ class controlNode():
         self.end = False
 
 
-        assert len(posF)==3,"La posición final no tiene 3 entradas"
+        assert len(posF)==2,"La posición final no tiene dos entradas"
         assert all(isinstance(x,(float,int)) for x in posF),"Los datos ingresados no son numericos"
         
-        '''
         Z=0
         if round(posF[1])>0:
             Z=np.pi/2
@@ -50,7 +48,6 @@ class controlNode():
 
 
         posF.append(Z)
-        '''
         self.posF=posF
         return
 
@@ -60,7 +57,7 @@ class controlNode():
         """
         rospy.loginfo("Se iniciara el Nodo")
         rospy.init_node(self.nombre,anonymous=True)       #Inicializacion del Nodo
-        self.rate= rospy.Rate(5)
+        self.rate= rospy.Rate(10)
 
         #En este loop se ejecuta el algoritmo de control
         while not (rospy.is_shutdown() or self.end):
@@ -87,46 +84,53 @@ class controlNode():
         """
         msg = Twist()    #Se ccrea el mensaje de odometria
         Kp,Kb = self.K      #Se obtienen las constantes
-        deltaError=0.05    #Se define las constantes de control
+        deltaError=0.075    #Se define las constantes de control
         pos = self.posF    #Se obtiene la posición Final
-        X,Y,Z=self.x[-1],self.y[-1],self.z[-1]   #Se obtiene las posiciones actuales del robot
-        dx = pos[0]-X    #Diferencia en X
+        X,Y=self.x[-1],self.y[-1]   #Se obtiene las posiciones actuales del robot
+        dx = pos[0]-X     #Diferencia en X
         dy = pos[1]-Y     #Diferencia en Y
-        beta = -Z-posF[2]   #Diferenia angulo cerrado
+        rho = math.sqrt((dx**2)+(dy**2))  #Distancia a recorrer
+        alfa = -self.z[-1]+np.arctan2(dy,dx)    #Angulo entre la pose actual del robot y el punto al cual llegar
+        beta = -self.z[-1]-posF[2]   #Diferenia angulo cerrado
         controlState=-1     #Estado de control
 
-        #print('Pose actual')
-        #print(X,Y,Z)
+        
+        #Se determina cual es el estado de control
+        if abs(beta)>=deltaError:
+            controlState=1
+        elif abs(rho)>=deltaError:
+            controlState=2
+        else:
+            self.end=True
+        
+
+        posActual = "\n Posición Actual : ["+str(X)+","+str(Y)+","+str(self.z[-1])+"]"
+        log = "\n Estado de control: " + str(controlState) + "\n Beta = " + str(beta) + "\n Rho = " +str(rho)
+        d = "\n dx = " + str(dx) + "\n dy = " +str(dy) + "\n alfa = " +str(alfa)
+        rospy.loginfo(posActual)
+        rospy.loginfo(log)
+        rospy.loginfo(d)
+
 
         
-        if(abs(dy)>=deltaError) and self.c%2 == 0:
-            print("Estado Y")
-            #msg.linear.x=Kp*dx
-            msg.linear.y=Kp*dy
-            #msg.angular.z=-Kb*beta
-            self.c += 1;
-        elif(abs(dx)>=deltaError):
-            print("Estado X")
-            msg.linear.x=Kp*dx
-            #msg.linear.y=Kp*dy
-            #msg.angular.z=-Kb*beta
-            self.c += 1;
-        elif(abs(dx)<=deltaError) and (abs(dy)<=deltaError):
-            if(abs(beta)>=deltaError):
-                print("Estado W")
-                msg.angular.z=-Kb*abs(beta)
-                self.c += 1;
-            else:
-                self.end=True
+        #Se hace el control
+        if controlState==1:
+            msg.angular.z = -Kb*beta #Se ubica la orientación del robot a la orientacion final
+        elif controlState==2:
+            V = rho* Kp  #Se determina la velocidad
+            #msg.linear.x = V*np.cos(alfa)   #Se descompone el vector en X y Y segun el angulo entre la pose actual y la distancia al objetivo
+            #msg.linear.y = V*np.sin(alfa)
+            msg.linear.y = -V*np.cos(alfa)   #Se descompone el vector en X y Y segun el angulo entre la pose actual y la distancia al objetivo
+            msg.linear.x = V*np.sin(alfa)
         
-        #rospy.loginfo(msg)  
+        rospy.loginfo(msg)  
         self.pub.publish(msg)
 
 if __name__=='__main__':
     try:
         if len(sys.argv)==2:
             posF = [float(i) for i in sys.argv[1].replace('[','').replace(']','').split(',')]
-            K = [3,2.5]
+            K= [0.75,0.5]
             nodo = controlNode(K,posF)
             nodo()
         else:
