@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import cv2;
-import time;
-import sys;
 import os;
+import sys;
+import cv2;
 import math;
+import time;
+import subprocess;
 import numpy as np;
 from heapq import heappop, heappush;
 # from scipy.ndimage import gaussian_filter;
@@ -129,7 +130,7 @@ def distanciaAObstaculo(acc, gridmapN, probFree):
 				dst[3] += gridmapN[row][c]*50;
 			else:
 				break;
-				
+
 	return min(dst);
 
 def Astar(graph, START, END, gridmap, gridmapN, probFree):
@@ -245,6 +246,12 @@ if __name__ == "__main__":
 		name = "senecabot_navigator.py";
 		path = os.path.abspath(__file__).replace("scripts"+os.path.sep+name, "results"+os.path.sep+"gridmap.png");
 		puntos = app(path);
+
+		puntos = str(puntos).replace("],", "];").replace("[[", "[").replace("]]","]");
+
+		test = subprocess.Popen(["rosrun","taller4_4","senecabot_drawer.py", puntos], stdout=subprocess.PIPE);
+		output = test.communicate()[0];
+		print(output);
 		
 	except Exception as e:
 		print("ERROR");

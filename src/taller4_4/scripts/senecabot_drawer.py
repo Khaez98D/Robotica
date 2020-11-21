@@ -8,7 +8,7 @@ from tf.transformations import euler_from_quaternion
 
 class controlNode():
     
-    def __init__(self,K,posF):
+    def __init__(self,K,posF, escala):
         """Metodo Creacion del Nodo
         Args:
             K ([int]): Arreglo con las constantes de control
@@ -19,7 +19,7 @@ class controlNode():
         self.nombre = 'Senecabot_drawer'
 
         #Escala de la imagen
-        self.scale = 2;
+        self.scale = escala;
 
         #TPublisher
         self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=70)
@@ -64,7 +64,7 @@ class controlNode():
         """
         rospy.loginfo("Se iniciara el Nodo")
         rospy.init_node(self.nombre,anonymous=True)       #Inicializacion del Nodo
-        self.rate = rospy.Rate(5)
+        self.rate = rospy.Rate(8)
 
         for p in self.posFS:
             self.posF = [float(i)/self.scale for i in p.replace('[','').replace(']','').split(',')];        
@@ -135,15 +135,21 @@ class controlNode():
 
 if __name__=='__main__':
     try:
-        print("Qué figura quiere dibujar? \n Pez \n Toro \n");
-        file = raw_input("Ingrese la figura: ").lower() + ".txt";
-        name = 'senecabot_drawer.py';
-        path = os.path.abspath(__file__).replace("scripts"+os.path.sep+name, "docs"+os.path.sep+file);
-        f = open(path, "r");
-        posFS = f.read().split(";");
-        K = [2.5,2.5];
+        posFS = [];
+        K = [2.5,1.5];
+        escala = 2;
 
-        nodo = controlNode(K, posFS);
+        if len(sys.argv) > 1:
+            posFS = sys.argv[1].split(";");
+        else:
+            print("Qué figura quiere dibujar? \n Pez \n Toro \n");
+            file = raw_input("Ingrese la figura: ").lower() + ".txt";
+            name = 'senecabot_drawer.py';
+            path = os.path.abspath(__file__).replace("scripts"+os.path.sep+name, "docs"+os.path.sep+file);
+            f = open(path, "r");
+            posFS = f.read().split(";");
+
+        nodo = controlNode(K, posFS, escala);
         nodo();
 
     except ValueError:
