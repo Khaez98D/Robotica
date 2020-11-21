@@ -60,14 +60,14 @@ class controlNode():
         """
         rospy.loginfo("Se iniciara el Nodo")
         rospy.init_node(self.nombre,anonymous=True)       #Inicializacion del Nodo
-        self.rate= rospy.Rate(5)
+        self.rate= rospy.Rate(10)
 
         #En este loop se ejecuta el algoritmo de control
         while not (rospy.is_shutdown() or self.end):
             self.control()
             self.rate.sleep()
 
-        print "Termino la ejecucion"   #Notificación a consola
+        print("Termino la ejecucion");   #Notificación a consola
 
 
     def odomCallBack(self,data):
@@ -112,14 +112,14 @@ class controlNode():
             #msg.angular.z=-Kb*beta
             self.c += 1;
         elif(abs(dx)<=deltaError) and (abs(dy)<=deltaError):
-            if(abs(beta)>=deltaError):
+            if(abs(beta)>=deltaError+0.1):
                 print("Estado W")
                 msg.angular.z=-Kb*abs(beta)
                 self.c += 1;
             else:
-                self.end=True
+                self.end=True;
         
-        #rospy.loginfo(msg)  
+        rospy.loginfo(msg)  
         self.pub.publish(msg)
 
 if __name__=='__main__':
@@ -132,6 +132,6 @@ if __name__=='__main__':
         else:
             raise ValueError()
     except ValueError:
-        print 'No se ingreso coordenadas Finales'
+        print('No se ingreso coordenadas Finales');
     except AssertionError:
-        print 'Error de Precondiciones'
+        print('Error de Precondiciones');

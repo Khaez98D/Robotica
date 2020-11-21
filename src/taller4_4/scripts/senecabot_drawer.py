@@ -18,14 +18,17 @@ class controlNode():
         #Nombre del Nodo
         self.nombre = 'Senecabot_drawer'
 
+        #Escala de la imagen
+        self.scale = 2;
+
         #TPublisher
         self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=70)
         rospy.Subscriber('odom',Odometry,self.odomCallBack)
 
         #Posicion del robot. X y Y son lineares. Z es angular
-        self.x = []
-        self.y = []
-        self.z = []
+        self.x = [0]
+        self.y = [0]
+        self.z = [0]
         self.c = 1;
 
         #Constantes para control del robot
@@ -36,8 +39,8 @@ class controlNode():
         self.end = False
 
 
-        assert len(posF)==3,"La posición final no tiene 3 entradas"
-        assert all(isinstance(x,(float,int)) for x in posF),"Los datos ingresados no son numericos"
+        #assert len(posF)==3,"La posición final no tiene 3 entradas"
+        #assert all(isinstance(x,(float,int)) for x in posF),"Los datos ingresados no son numericos"
         
         '''
         Z=0
@@ -51,7 +54,8 @@ class controlNode():
 
         posF.append(Z)
         '''
-        self.posF=posF
+        self.posFS = posF;
+        self.posF = [];
         return
 
         
@@ -62,10 +66,15 @@ class controlNode():
         rospy.init_node(self.nombre,anonymous=True)       #Inicializacion del Nodo
         self.rate = rospy.Rate(5)
 
-        #En este loop se ejecuta el algoritmo de control
-        while not (rospy.is_shutdown() or self.end):
-            self.control()
-            self.rate.sleep()
+        for p in self.posFS:
+            self.posF = [float(i)/self.scale for i in p.replace('[','').replace(']','').split(',')];        
+            print(self.posF);
+            
+            #En este loop se ejecuta el algoritmo de control
+            while not (rospy.is_shutdown() or self.end):
+                self.control()
+                self.rate.sleep()
+            self.end = False;
 
         print("Termino la ejecucion");   #Notificación a consola
 
@@ -92,11 +101,11 @@ class controlNode():
         X,Y,Z=self.x[-1],self.y[-1],self.z[-1]   #Se obtiene las posiciones actuales del robot
         dx = pos[0]-X    #Diferencia en X
         dy = pos[1]-Y     #Diferencia en Y
-        beta = -Z-posF[2]   #Diferenia angulo cerrado
+        beta = -Z-self.posF[2]   #Diferenia angulo cerrado
         controlState=-1     #Estado de control
 
-        #print('Pose actual')
-        #print(X,Y,Z)
+        #print(X,Y,Z);
+        #print(dx,dy,beta);
 
         
         if(abs(dy)>=deltaError) and self.c%2 == 0:
@@ -112,12 +121,14 @@ class controlNode():
             #msg.angular.z=-Kb*beta
             self.c += 1;
         elif(abs(dx)<=deltaError) and (abs(dy)<=deltaError):
-            if(abs(beta)>=deltaError):
+            if(abs(beta)>=deltaError+0.15):
                 print("Estado W")
                 msg.angular.z=-Kb*abs(beta)
                 self.c += 1;
             else:
                 self.end=True
+
+        self.c += 1;
         
         #rospy.loginfo(msg)  
         self.pub.publish(msg)
@@ -130,18 +141,16 @@ if __name__=='__main__':
         path = os.path.abspath(__file__).replace("scripts"+os.path.sep+name, "docs"+os.path.sep+file);
         f = open(path, "r");
         posFS = f.read().split(";");
-        K = [3,2.5];
+        K = [2.5,2.5];
 
-        for p in posFS:
-            posF = [float(i) for i in p.replace('[','').replace(']','').split(',')];
-            nodo = controlNode(K, posF);
-            nodo();
-            print(posF);
+        nodo = controlNode(K, posFS);
+        nodo();
 
     except ValueError:
         print('No se ingreso coordenadas Finales');
     except AssertionError:
         print('Error de Precondiciones');
+        raise
     except:
         print("No ingrsó una figura correcta");
         raise
