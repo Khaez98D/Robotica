@@ -67,7 +67,10 @@ class controlNode():
         self.rate = rospy.Rate(8)
 
         for p in self.posFS:
-            self.posF = [float(i)/self.scale for i in p.replace('[','').replace(']','').split(',')];        
+            self.posF = [float(i)/self.scale for i in p.replace('[','').replace(']','').split(',')];      
+            for idx,val in enumerate(self.posF):
+                if idx%2==0 and idx>1:
+                    self.posF[idx]=np.pi/2
             print(self.posF);
             
             #En este loop se ejecuta el algoritmo de control
@@ -128,7 +131,8 @@ class controlNode():
             else:
                 self.end=True
 
-        self.c += 1;
+        else:
+            self.c+=1
         
         #rospy.loginfo(msg)  
         self.pub.publish(msg)
@@ -137,7 +141,7 @@ if __name__=='__main__':
     try:
         posFS = [];
         K = [2.5,1.5];
-        escala = 2;
+        escala = 0.5;
 
         if len(sys.argv) > 1:
             posFS = sys.argv[1].split(";");
