@@ -131,10 +131,10 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/robotica/catkin_ws/build/gtest/cmake_install.cmake")
-  include("/home/robotica/catkin_ws/build/small-size-bridge/cmake_install.cmake")
+  include("/home/robotica/catkin_ws/build/proyecto/cmake_install.cmake")
   include("/home/robotica/catkin_ws/build/taller2_4/cmake_install.cmake")
   include("/home/robotica/catkin_ws/build/taller3_4/cmake_install.cmake")
-  include("/home/robotica/catkin_ws/build/turtle_bot_4/cmake_install.cmake")
+  include("/home/robotica/catkin_ws/build/taller4_4/cmake_install.cmake")
 
 endif()
 

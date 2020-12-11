@@ -1,0 +1,8 @@
+prefix=/home/robotica/catkin_ws/install
+
+Name: proyecto
+Description: Description of proyecto
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: 

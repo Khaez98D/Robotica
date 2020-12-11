@@ -2,4 +2,4 @@
 source_root_dir = '/home/robotica/catkin_ws/src'
 whitelisted_packages = ''.split(';') if '' != '' else []
 blacklisted_packages = ''.split(';') if '' != '' else []
-underlay_workspaces = '/home/robotica/catkin_ws/devel;/opt/ros/melodic'.split(';') if '/home/robotica/catkin_ws/devel;/opt/ros/melodic' != '' else []
+underlay_workspaces = '/opt/ros/melodic'.split(';') if '/opt/ros/melodic' != '' else []

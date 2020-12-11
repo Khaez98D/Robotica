@@ -1,0 +1,8 @@
+prefix=/home/robotica/catkin_ws/devel
+
+Name: proyecto
+Description: Description of proyecto
+Version: 0.0.0
+Cflags: -I/home/robotica/catkin_ws/devel/include
+Libs: -L${prefix}/lib 
+Requires: 

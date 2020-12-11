@@ -361,13 +361,19 @@ gtest_hide_internal_symbols:BOOL=OFF
 gtest_main_LIB_DEPENDS:STATIC=general;-lpthread;general;gtest;
 
 //Path to a library.
-lib:FILEPATH=/opt/ros/melodic/lib/libxmlrpcpp.so
+lib:FILEPATH=/opt/ros/melodic/lib/librostime.so
 
 //The directory containing a CMake configuration file for message_generation.
 message_generation_DIR:PATH=/opt/ros/melodic/share/message_generation/cmake
 
 //The directory containing a CMake configuration file for message_runtime.
 message_runtime_DIR:PATH=/opt/ros/melodic/share/message_runtime/cmake
+
+//Value Computed by CMake
+proyecto_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/proyecto
+
+//Value Computed by CMake
+proyecto_SOURCE_DIR:STATIC=/home/robotica/catkin_ws/src/proyecto
 
 //The directory containing a CMake configuration file for rosconsole.
 rosconsole_DIR:PATH=/opt/ros/melodic/share/rosconsole/cmake
@@ -413,6 +419,12 @@ taller3_4_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/taller3_4
 
 //Value Computed by CMake
 taller3_4_SOURCE_DIR:STATIC=/home/robotica/catkin_ws/src/taller3_4
+
+//Value Computed by CMake
+taller4_4_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/taller4_4
+
+//Value Computed by CMake
+taller4_4_SOURCE_DIR:STATIC=/home/robotica/catkin_ws/src/taller4_4
 
 //Value Computed by CMake
 turtle_bot_4_BINARY_DIR:STATIC=/home/robotica/catkin_ws/build/turtle_bot_4

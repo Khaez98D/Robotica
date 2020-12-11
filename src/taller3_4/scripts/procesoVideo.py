@@ -27,9 +27,6 @@ class futVideo:
         self.procesVideo(path, M);
 
     def selecEsquinas(self, frame):
-        #Reescalar imagen para dimensión de 900x600
-        # dimScale = [frame.shape[0]/900, frame.shape[1]/600];
-        reFrame = cv2.resize(frame, (900,600), interpolation = cv2.INTER_AREA);
 
         imgWinName = "Selección de esquinas";
 
