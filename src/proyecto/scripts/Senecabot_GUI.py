@@ -98,7 +98,7 @@ class ubiacion:
         Funcion que inicializa el subscriptor a odom
         '''
         rospy.Subscriber('/odom',Odometry,self.odomCallBack)
-        self.start = tuple(self.start)[::-1]
+        self.start = tuple(start)[::-1]
         self.GUI = GUI
         self.x,self.y=self.start
 
