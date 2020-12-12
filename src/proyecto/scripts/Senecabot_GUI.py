@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
+# coding: latin-1
 
 import cv2
 import rospy
@@ -7,23 +7,22 @@ import pygame
 import os
 import pygame
 import matplotlib.pyplot as plt
-
-# from proyecto.srv import *
-
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion
+#from proyecto.srv import *
 from tools import Tools
 from std_msgs.msg import Float32MultiArray, Float32
+
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 PATHPLANO = r'/home/robotica/catkin_ws/src/proyecto/docs/Plano.jpeg'  # Path a la imagen del plano
 puntoInicial = []  # Coordenadas punto inicial
 puntoFinal = []  # Coordenadas punto final
-PROB_FREE = 0.3  # Probabilidad de libre (Para pintar el mapa)
-PROB_OCC = 0.6  # Probabilidad de ocupado (Para pintar el mapa)
 
 
 class servicioPuntos:
 
     '''
-    Nodo que provee el servicio de informar los puntos iniciales y finales
+    Clase que provee el servicio de informar los puntos iniciales y finales
     '''
 
     def handleResponse(self, req):
@@ -44,53 +43,96 @@ class servicioPuntos:
         s = rospy.Service('Coordenadas', points, self.handleResponse)
         print 'Listo para informar coordenadas inicial y final'
 
-
-class planeacionRuta:
+class nodosVisitado:
 
     '''
-    Nodo que recibe las celdas de la planeacion de ruta
+    Clase que recibe las celdas de la planeacion de ruta
     '''
 
     def __init__(self, GUI):
-        rospy.Subscriber('/senecabot_route', Float32MultiArray,
-                         self.callbackRoute)
+        '''
+        Se inicializan dos subscriptores, uno para obtener la ruta y el otro para dibujar los nodos visitados
+        '''
         rospy.Subscriber('/senecabot_visited', Float32MultiArray,
+                         self.callbackVisited)
+        self.GUI = GUI
+
+    def callbackVisited(self, data):
+        '''
+        Funcion callback para los nodos seleccionados
+        '''
+        dataCoord = data.data
+        coord = (dataCoord[1], dataCoord[0])
+        GUI.nodosVisitados(coord)
+
+class nodosRuta:
+
+    '''
+    Clase que recibe las celdas de la planeacion de ruta
+    '''
+
+    def __init__(self, GUI):
+        '''
+        Se inicializan dos subscriptores, uno para obtener la ruta y el otro para dibujar los nodos visitados
+        '''
+        rospy.Subscriber('/senecabot_route', Float32MultiArray,
                          self.callbackRoute)
         self.GUI = GUI
 
- 
     def callbackRoute(self, data):
+        '''
+        Funcion callback para la ruta seleccionada
+        '''
         dataCoord = data.data
         coord = (dataCoord[1], dataCoord[0])
-        GUI.draw_visited(coord)
-
+        GUI.nodosRuta(coord)
 
 class ubiacion:
 
     '''
-    Nodo que grafica sobre el mapa la posicion actual del robot
+    Clase que grafica sobre el mapa la posicion actual del robot
     '''
 
-    def __init__(self,GUI):
+    def __init__(self,GUI,start):
+        '''
+        Funcion que inicializa el subscriptor a odom
+        '''
+        rospy.Subscriber('/odom',Odometry,self.odomCallBack)
+        self.start = tuple(self.start)[::-1]
+        self.GUI = GUI
+        self.x,self.y=self.start
 
-
+    def odomCallBack(self,data):
+        """Función CallBack para el topico de odometria. Transforma de Cuaterniones a angulos de Euler.
+        Guarda la orientación del robot en el arreglo de Z.
+        Args:
+            data (Quaternion): Orientación del robot en cuaterniones
+        """
+        pose = data.pose.pose
+        tolX = (8.16/719)*5 #Medida en metros, si se mueve más de tolX, se actualiza la interfaz con un corrimiento de 5 pixeles
+                            #Valor calculado como: (LonguitudXReal/WithImagen) * numPixelesCorrimiento
+        tolY = (7.3/702)*5 #Medida en metros, si se mueve más de tolY, se actualiza la interfaz con un corrimiento de 5 pixeles
+                            #Valor calculado como: (LonguitudYReal/HeightImagen) * numPixelesCorrimiento
+        (X,Y) = pose.position.x+self.start[0],pose.position.y+self.start[1] #Se suma las coordenadas del comienzo a la distancia recorrida
+        if abs(X-self.x)>=tolx or abs(Y-self.y)>=tolY:
+            (self.x,self.y)=(X,Y)
+            self.GUI.updatePos((int(Y),int(X)))     #Se aproxima al entero más cerano
 
 class aprilTag:
 
     '''
-    Nodo para determinar el april tag
+    Clase para determinar el april tag
     '''
 
     def __init__(self, GUI):
         rospy.Subscriber('/senecabot_tag', Float32)
         self.GUI = GUI
-        self.tag = -1
+        self.tag = 0
 
     def callbackTag(self, data):
         tag = data.data
         if tag != self.tag:
             self.GUI.updateAprilTag(str(tag))
-
 
 class cv2manager:
 
@@ -129,7 +171,6 @@ class cv2manager:
         cv2.waitKey()
         return self.puntos
 
-
 class GUI_manager:
 
     '''
@@ -140,57 +181,67 @@ class GUI_manager:
         '''
         Metodo que inicializa el canvasde PyGame
         '''
-
-        image = pygame.image.load(PATHPLANO)
-        self.tag = '-1'
-        (self.h, self.w) = shape
-        (self.start, self.goal) = coords
+        image = pygame.image.load(PATHPLANO)    #Se carga el plano como imagen
+        
+        self.tag = '0'  #Valor inicial del taag
+        (self.h, self.w) = shape    #Se obtiene el tamaño del plano
+        self.isPainted = [[False for j in range(self.w)] for i in range(self.h)]   #Matriz para no sobreponer pintura de visitados y ruta
+        
+        (self.start, self.goal) = coords    #Coordenadas de inicio y final, se transorman en tuplas y se invierten para que quede (Y,X)
         self.start = tuple(self.start)[::-1]
         self.goal = tuple(self.goal)[::-1]
-        self.size_win_x = int(self.w * 1)
+
+
+        self.size_win_x = int(self.w * 1.2) #Tamaño de la ventana
         self.size_win_y = int(self.h * 1)
-        self.block_size_x = 1
-        self.block_size_y = 1
-        self.red = (255, 0, 0)
-        self.green = (0, 255, 0)
-        self.blue = (0, 0, 255)
+
+        self.block_size_x = self.size_win_x/self.w
+        self.block_size_y = self.size_win_y/self.h
+
+        #Definicion de algunos colores
+        self.red = (255, 0, 0)#Color meta
+        self.green = (0, 255, 0)#Color inicio
+        self.blue = (0, 0, 255)#Color visitados
         self.darkBlue = (0, 0, 128)
         self.white = (255, 255, 255)
         self.black = (0, 0, 0)
-        self.pink = (255, 200, 200)
-        self.orange = (253, 106, 2)
+        self.purple = (163, 73, 164)#Ubicación
+        self.orange = (253, 106, 2)#Color ruta
         self.gray = (192, 192, 192)
-        self.prob_free = PROB_FREE
-        self.prob_occ = PROB_OCC
+        
+        #FUente para texto
         self.myfont = pygame.font.SysFont('Comic Sans MS', 25)
-        self.screen = pygame.display.set_mode((int(self.size_win_x
-                * 1.2), int(self.size_win_y)))
+
+        #Se crea el canvas
+        self.screen = pygame.display.set_mode((int(self.size_win_x), int(self.size_win_y)))
+        
+        #Se pinta el canvas y se pone la imagen
         self.screen.fill(self.white)
         self.screen.blit(image, (0, 0))
+
+        #Se itera para pintar el punto de inicio y fin
         for y in range(self.h):
             for x in range(self.w):
-                rect = pygame.Rect(x * self.block_size_x, y
-                                   * self.block_size_y,
-                                   self.block_size_x * 10,
-                                   self.block_size_y * 10)
-                if self.start == (y, x):
-                    pygame.draw.rect(self.screen, self.red, rect, 0)
-                if self.goal == (y, x):
-                    pygame.draw.rect(self.screen, self.green, rect, 0)
+                if self.start == (y, x):    #Si es el punto de inicio, pintar de rojo
+                    pygame.draw.circle(self.screen,self.red,self.start[::-1],5,width=0)
+                    self.isPainted[y][x]=True
+                if self.goal == (y, x): #Si es el punto de fin, pintar de verde
+                    pygame.draw.circle(self.screen,self.green,self.goal[::-1],5,width=0)
+                    self.isPainted[y][x]=True
 
+        #Pintar posición actual
+        self.posFig = pygame.draw.circle(self.screen,self.purple,self.start[::-1],3,width=0)
+        
+        #Escribir los tag
         (i, j) = (self.w * 1, int(self.h / 4))
         tagH = self.myfont.render('April Tag actual:', True, self.black)
         self.screen.blit(tagH, (i, j))
         self.myfont = pygame.font.SysFont('Comic Sans MS', 50)
-
-
         (i, j) = (self.w * 1, int(self.h / 4))
         tag = self.myfont.render(self.tag, False, self.black)
         self.screen.blit(tag, (i, j + 30))
         pygame.display.update()
         
-
-
     def updateAprilTag(self, newValue):
         '''
         Funcion para actualizar el valor del April Tag de pantalla
@@ -201,27 +252,35 @@ class GUI_manager:
         tag = self.myfont.render(self.tag, False, self.black)
         self.screen.blit(tag, (i, j + 30))
         pygame.display.update()
-
-    
+  
     def updatePos(self,pos):
         '''
         Funcion para actualizar la posicion actual
         '''
-
+        (X,Y) = self.posFig.center  #Se obtiene la coordenada anterior
+        if (Y,X) == self.start: #Si es el comienzo, se pinta de rojo para no dañar la ubicación
+            self.posFig = pygame.draw.circle(self.screen,self.red,self.start[::-1],5,width=0)
+        else:   #Si no, se pinta la anterior ubicación de blanco
+            self.posFig = pygame.draw.circle(self.screen,self.white,(X,Y),3,width=0)
+        #Se pinta la ubicación actual
+        self.posFig = pygame.draw.circle(self.screen,self.purple,pos,3,width=0)
+        
     def nodosVisitados(self,pos):
         '''
         Funcion para pintar las casillas visitadas
         '''
+        self.posFig = pygame.draw.circle(self.screen,self.blue,self.start[::-1],5,width=0)
 
     def nodosRuta(self,pos):
         '''
         Funcion para pintar la ruta
         '''
+        self.posFig = pygame.draw.circle(self.screen,self.orange,self.start[::-1],5,width=0)
 
 
 if __name__ == '__main__':
     print 'SENECABOT GRUPO 4'
-    rospy.init_node('GUI_node')
+    #rospy.init_node('GUI_node')
     print '==============================='
     cv2manager = cv2manager(PATHPLANO)
     puntos = cv2manager.seleccionarPuntos()
@@ -231,9 +290,28 @@ if __name__ == '__main__':
     c = 12
     guiManager = GUI_manager(cv2manager.shape, puntos)
     aprilTagManager = aprilTag(guiManager)
+    visitadosManager = nodosVisitado(guiManager)
+    nodosRuta = nodosRuta(guiManager)
+    loadReady = False
+    while not loadReady:
+        print("Ya cargo la ruta? [S/n]")
+        resp = raw_input()
+        if resp.lower()=='s':
+            loadReady=True
+    ubiacionManager = ubiacion(guiManager,puntos[0])
+    clock = pygame.time.Clock()
     while is_running:
         for ev in pygame.event.get():
 
             if ev.type == pygame.QUIT:
                 is_running = False
                 pygame.quit()
+
+            if ev.type == pygame.KEYDOWN:
+                if ev.key == pygame.K_LEFT :
+                    print('left')
+                    guiManager.updatePos(2)
+                elif ev.key == pygame.K_UP :
+                    print('up')
+                    guiManager.updatePos(1)
+        clock.tick(10)
