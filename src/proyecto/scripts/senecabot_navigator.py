@@ -2,21 +2,32 @@
 # -*- coding: utf-8 -*-
 
 import os;
-import sys;
 import cv2;
 import math;
 import time;
 import subprocess;
 import numpy as np;
+import sys,rospy
+from proyecto.srv import *
 from heapq import heappop, heappush;
+from std_msgs.msg import Float32MultiArray, Float32
 # from scipy.ndimage import gaussian_filter;
 
 START = ();
 END = ();
 
+def cliente_puntos():
+    rospy.wait_for_service('Coordenadas')
+    try:
+        server = rospy.ServiceProxy('Coordenadas',points)
+        resp = server('ignorar')
+        return resp.coords
+    except rospy.ServiceException:
+        print ("Service_call_failed")
+
 def app(griFile):
     #Obtener gridmap
-	gridmap = cv2.imread(griFile);
+	gridmap = cv2.imread(griFile,0);
 	gridmap = cv2.blur(gridmap,(5,5));
 	# gridmap = gaussian_filter(gridmap, sigma=2);
 	gridmapN = cv2.imread(griFile, cv2.IMREAD_GRAYSCALE);
@@ -29,21 +40,26 @@ def app(griFile):
 
 	terminoRuta = False;	# Bandera para saber que se ha encontrado una ruta
 	puntos = [];			# Lista de puntos para completar la ruta
-
-
-	#---------------------------------
-	#	START END
-	#---------------------------------
+	coordenadas = [int(i) for i in cliente_puntos().replace('[','').replace(' ','').replace(']','').split(',')]
+	START = tuple(coordenadas[0:2][::-1])
+	END = tuple(coordenadas[2:4][::-1])
+	print(coordenadas)
+	route_Pub = rospy.Publisher('/senecabot_route',Float32MultiArray)
+	visited_Pub = rospy.Publisher('/senecabot_visited',Float32MultiArray)
 
 
     # Si ya se seleccionó el punto inicial y final se busca la ruta
 	if START and END and not terminoRuta:
 		print("Calculando ruta, por favor espere...")
-		ruta = Astar(graph, START, END, gridmap, gridmapN, probFree);
-
+		ruta = Astar(graph, START, END, gridmap, gridmapN, probFree,visited_Pub);
+		
     	#Si ya encontró la ruta se realiza ahora el control de posición punto a punto
-		puntos = darPuntosRuta(ruta, 0.005);
-
+		puntos = darPuntosRuta(ruta,START);
+		msg = Float32MultiArray()
+		for punto in puntos:
+			msg.data = list(punto)
+			#rospy.loginfo(msg)
+			route_Pub.publish(msg)
 		#---------------------------------
 		# Publicar puntos ruta al topico
 		#---------------------------------
@@ -101,7 +117,7 @@ def distanciaAObstaculo(acc, gridmapN, probFree):
 
 	return min(dst);
 
-def Astar(graph, START, END, gridmap, gridmapN, probFree):
+def Astar(graph, START, END, gridmap, gridmapN, probFree,publisher):
 	nodos = [];
 	nodosV = set();
 	heappush(nodos, (0 + heuristic(START, END, gridmapN, probFree), 0, START, ""));
@@ -120,6 +136,10 @@ def Astar(graph, START, END, gridmap, gridmapN, probFree):
             # Se agrega a la lista de nodos visitados
 			count += 1;
 			nodosV.add(nodoActual[2]);
+			msg = Float32MultiArray()
+			msg.data=list(nodoActual[2])
+			publisher.publish(msg)
+
 
 			#---------------------------------
 			# Enviar al topico de puntos visitados
@@ -128,11 +148,10 @@ def Astar(graph, START, END, gridmap, gridmapN, probFree):
             # Se obtiene la mejor Ruta hasta este nodo, para añadirla a sus vecinos
 			path = nodoActual[3];
 
-            #Se pinta en el mapa
-			gridmap[nodoActual[2]] = [255,0,0];
 
             # Se expande este nodo en sus vecinos
 			for vecino in graph[nodoActual[2]]:
+				
 				costoN = nodoActual[1] + heuristic(vecino[1], END, gridmapN, probFree);
 				costoT = nodoActual[1] + (gridmapN[nodoActual[2]]);
 				heappush(nodos, (costoN, costoT, vecino[1], path+vecino[0]));
@@ -140,90 +159,32 @@ def Astar(graph, START, END, gridmap, gridmapN, probFree):
 	print("NO HAY RUTA");
 	return "NO HAY RUTA";
 
-def darPuntosRuta(ruta, dim):
+def darPuntosRuta(ruta,start):
 	puntos = [];
-	x = 0.0;
-	y = 0.0;
+	(x,y) = start;
 	if ruta == "NO HAY RUTA":
 		raise NameError('HiThere');
 	else:
-		i = 0;
-		while i < len(ruta):
-			l = ruta[i];
-			count = 1;
-			
-			if i+1 < len(ruta) and l == ruta[i+1]:
-				for ls in range(i,len(ruta)):
-					if ruta[ls] == l:
-						count += 1;
-					else:
-						break;
-
-				if l == 'N':
-					x = x - count*dim;
-				elif l == 'S':
-					x = x + count*dim;
-				elif l == 'W':
-					y = y - count*dim;
-				elif l == 'E':
-					y = y + count*dim;
-
-				i = i + count;
-
-
-			elif i+3 < len(ruta) and ( (l + ruta[i+1]) == (ruta[i+2] + ruta[i+3]) ):
-				ls = i+2;
-				while ls < len(ruta):
-					if ls+1 < len(ruta):
-						if (l + ruta[i+1]) == (ruta[ls] + ruta[ls+1]):
-							count += 1;
-							ls += 2;
-						else:
-							break;
-					else:
-						break;
-
-				if (l + ruta[i+1]) == 'NW':
-					x = x - count*dim;
-					y = y - count*dim;
-				elif (l + ruta[i+1]) == 'NE':
-					x = x - count*dim;
-					y = y + count*dim;
-				elif (l + ruta[i+1]) == 'SW':
-					x = x + count*dim;
-					y = y - count*dim;
-				elif (l + ruta[i+1]) == 'SE':
-					x = x + count*dim;
-					y = y + count*dim;
-
-				i = i + 2*count;
-
-			else:
-				if l == 'N':
-					x = x - count*dim;
-				elif l == 'S':
-					x = x + count*dim;
-				elif l == 'W':
-					y = y - count*dim;
-				elif l == 'E':
-					y = y + count*dim;
-				i += 1;
-
-			puntos.append([x,y,0.0]);
-
+		for i in ruta:
+			if i=='S':
+				x+=1
+			elif i=='N':
+				x-=1
+			elif i=='E':
+				y+=1
+			elif i=='W':
+				y-=1
+			puntos.append((x,y))
 		return puntos;
 
 if __name__ == "__main__":
 	try:
-		name = "senecabot_navigator.py";
-		path = os.path.abspath(__file__).replace("scripts"+os.path.sep+name, "results"+os.path.sep+"gridmap.png");
+		rospy.init_node('Navigator_node')
+		path = r'/home/robotica/catkin_ws/src/proyecto/docs/Gridmap.png'
 		puntos = app(path);
-
 		puntos = str(puntos).replace("],", "];").replace("[[", "[").replace("]]","]");
 
-		test = subprocess.Popen(["rosrun","taller4_4","senecabot_drawer.py", puntos], stdout=subprocess.PIPE);
-		output = test.communicate()[0];
-		print(output);
+		
 		
 	except Exception as e:
 		print("ERROR");

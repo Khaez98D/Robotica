@@ -19,6 +19,7 @@ puntoInicial = []  # Coordenadas punto inicial
 puntoFinal = []  # Coordenadas punto final
 
 
+
 class servicioPuntos:
 
     '''
@@ -30,7 +31,7 @@ class servicioPuntos:
         Metodo que informa las coordeanadas
         '''
 
-        resp = str(self.puntos[0])+','+str(self.puntos[0])
+        resp = str(self.puntos[0])+','+str(self.puntos[1])
         return pointsResponse(resp)
 
     def __init__(self, puntos):
@@ -62,7 +63,7 @@ class nodosVisitado:
         '''
         dataCoord = data.data
         coord = (dataCoord[1], dataCoord[0])
-        GUI.nodosVisitados(coord)
+        self.GUI.nodosVisitados(coord)
 
 class nodosRuta:
 
@@ -84,9 +85,9 @@ class nodosRuta:
         '''
         dataCoord = data.data
         coord = (dataCoord[1], dataCoord[0])
-        GUI.nodosRuta(coord)
+        self.GUI.nodosRuta(coord)
 
-class ubiacion:
+class ubicaion:
 
     '''
     Clase que grafica sobre el mapa la posicion actual del robot
@@ -141,6 +142,7 @@ class cv2manager:
 
     def __init__(self, path):
         self.img = cv2.imread(PATHPLANO, 0)
+        self.img = cv2.blur(self.img,(5,5));
         self.shape = self.img.shape
         self.puntos = []
         self.imgWinName = 'Seleccion Puntos'
@@ -267,18 +269,20 @@ class GUI_manager:
             self.posFig = pygame.draw.circle(self.screen,self.white,(X,Y),3,width=0)
         #Se pinta la ubicación actual
         self.posFig = pygame.draw.circle(self.screen,self.purple,pos,3,width=0)
+        pygame.display.update()
         
     def nodosVisitados(self,pos):
         '''
         Funcion para pintar las casillas visitadas
         '''
-        self.posFig = pygame.draw.circle(self.screen,self.blue,self.start[::-1],5,width=0)
+        self.posFig = pygame.draw.circle(self.screen,self.blue,pos,2,width=0)
 
     def nodosRuta(self,pos):
         '''
         Funcion para pintar la ruta
         '''
-        self.posFig = pygame.draw.circle(self.screen,self.orange,self.start[::-1],5,width=0)
+        self.posFig = pygame.draw.circle(self.screen,self.orange,pos,2,width=0)
+        
 
 
 if __name__ == '__main__':
@@ -296,8 +300,9 @@ if __name__ == '__main__':
     aprilTagManager = aprilTag(guiManager)
     visitadosManager = nodosVisitado(guiManager)
     nodosRuta = nodosRuta(guiManager)
-    ubiacionManager = ubiacion(guiManager,puntos[0])
+    ubiacionManager = ubicaion(guiManager,puntos[0])
     while is_running:
+        pygame.display.update()
         for ev in pygame.event.get():
 
             if ev.type == pygame.QUIT:
