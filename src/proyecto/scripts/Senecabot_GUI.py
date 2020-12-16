@@ -9,7 +9,7 @@ import pygame
 import matplotlib.pyplot as plt
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
-#from proyecto.srv import *
+from proyecto.srv import *
 from tools import Tools
 from std_msgs.msg import Float32MultiArray, Float32
 
@@ -284,7 +284,7 @@ class GUI_manager:
 
 if __name__ == '__main__':
     print 'SENECABOT GRUPO 4'
-    #rospy.init_node('GUI_node')
+    rospy.init_node('GUI_node')
     print '==============================='
     cv2manager = cv2manager(PATHPLANO)
     puntos = cv2manager.seleccionarPuntos()
