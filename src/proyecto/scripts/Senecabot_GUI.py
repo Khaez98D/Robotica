@@ -9,12 +9,12 @@ import pygame
 import matplotlib.pyplot as plt
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
-from proyecto.srv import *
+#from proyecto.srv import *
 from tools import Tools
 from std_msgs.msg import Float32MultiArray, Float32
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
-PATHPLANO = r'/home/robotica/catkin_ws/src/proyecto/docs/Plano.jpeg'  # Path a la imagen del plano
+PATHPLANO = r'/home/robotica/catkin_ws/src/proyecto/docs/Gridmap.png'  # Path a la imagen del plano
 puntoInicial = []  # Coordenadas punto inicial
 puntoFinal = []  # Coordenadas punto final
 
@@ -109,9 +109,9 @@ class ubiacion:
             data (Quaternion): Orientación del robot en cuaterniones
         """
         pose = data.pose.pose
-        tolX = (8.16/719)*5 #Medida en metros, si se mueve más de tolX, se actualiza la interfaz con un corrimiento de 5 pixeles
+        tolX = (3.5/700)*5 #Medida en metros, si se mueve más de tolX, se actualiza la interfaz con un corrimiento de 5 pixeles
                             #Valor calculado como: (LonguitudXReal/WithImagen) * numPixelesCorrimiento
-        tolY = (7.3/702)*5 #Medida en metros, si se mueve más de tolY, se actualiza la interfaz con un corrimiento de 5 pixeles
+        tolY = (3/600)*5 #Medida en metros, si se mueve más de tolY, se actualiza la interfaz con un corrimiento de 5 pixeles
                             #Valor calculado como: (LonguitudYReal/HeightImagen) * numPixelesCorrimiento
         (X,Y) = pose.position.x+self.start[0],pose.position.y+self.start[1] #Se suma las coordenadas del comienzo a la distancia recorrida
         if abs(X-self.x)>=tolx or abs(Y-self.y)>=tolY:
@@ -191,6 +191,8 @@ class GUI_manager:
         self.start = tuple(self.start)[::-1]
         self.goal = tuple(self.goal)[::-1]
 
+        self.prob_free = 0.3
+        self.prob_occ = 0.6
 
         self.size_win_x = int(self.w * 1.2) #Tamaño de la ventana
         self.size_win_y = int(self.h * 1)
@@ -218,7 +220,8 @@ class GUI_manager:
         #Se pinta el canvas y se pone la imagen
         self.screen.fill(self.white)
         self.screen.blit(image, (0, 0))
-
+        
+        self.myfont = pygame.font.SysFont('Comic Sans MS', 20)
         #Se itera para pintar el punto de inicio y fin
         for y in range(self.h):
             for x in range(self.w):
@@ -230,14 +233,15 @@ class GUI_manager:
                     self.isPainted[y][x]=True
 
         #Pintar posición actual
-        self.posFig = pygame.draw.circle(self.screen,self.purple,self.start[::-1],3,width=0)
-        
+        self.posFig = pygame.draw.circle(self.screen,self.purple,self.start[::-1],3,width=0)         
+
+
         #Escribir los tag
-        (i, j) = (self.w * 1, int(self.h / 4))
+        (i, j) = (self.w * 1.025, int(self.h / 4))
         tagH = self.myfont.render('April Tag actual:', True, self.black)
         self.screen.blit(tagH, (i, j))
         self.myfont = pygame.font.SysFont('Comic Sans MS', 50)
-        (i, j) = (self.w * 1, int(self.h / 4))
+        (i, j) = (self.w * 1.025, int(self.h / 4))
         tag = self.myfont.render(self.tag, False, self.black)
         self.screen.blit(tag, (i, j + 30))
         pygame.display.update()
@@ -293,11 +297,6 @@ if __name__ == '__main__':
     visitadosManager = nodosVisitado(guiManager)
     nodosRuta = nodosRuta(guiManager)
     loadReady = False
-    while not loadReady:
-        print("Ya cargo la ruta? [S/n]")
-        resp = raw_input()
-        if resp.lower()=='s':
-            loadReady=True
     ubiacionManager = ubiacion(guiManager,puntos[0])
     clock = pygame.time.Clock()
     while is_running:
@@ -306,12 +305,4 @@ if __name__ == '__main__':
             if ev.type == pygame.QUIT:
                 is_running = False
                 pygame.quit()
-
-            if ev.type == pygame.KEYDOWN:
-                if ev.key == pygame.K_LEFT :
-                    print('left')
-                    guiManager.updatePos(2)
-                elif ev.key == pygame.K_UP :
-                    print('up')
-                    guiManager.updatePos(1)
         clock.tick(10)
