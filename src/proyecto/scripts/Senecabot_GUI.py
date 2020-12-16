@@ -30,8 +30,7 @@ class servicioPuntos:
         Metodo que informa las coordeanadas
         '''
 
-        resp = 'El punto inicial es: ' + str(self.puntos[0]) \
-            + '\nEl punto final es: ' + str(self.puntos[1])
+        resp = str(self.puntos[0])+','+str(self.puntos[0])
         return pointsResponse(resp)
 
     def __init__(self, puntos):
@@ -290,19 +289,17 @@ if __name__ == '__main__':
     puntos = cv2manager.seleccionarPuntos()
     gridmap = cv2manager.img / 255
     is_running = True
+    print("Se iniciara la interfaz")
     pygame.init()
-    c = 12
+    pointsService = servicioPuntos(puntos)
     guiManager = GUI_manager(cv2manager.shape, puntos)
     aprilTagManager = aprilTag(guiManager)
     visitadosManager = nodosVisitado(guiManager)
     nodosRuta = nodosRuta(guiManager)
-    loadReady = False
     ubiacionManager = ubiacion(guiManager,puntos[0])
-    clock = pygame.time.Clock()
     while is_running:
         for ev in pygame.event.get():
 
             if ev.type == pygame.QUIT:
                 is_running = False
                 pygame.quit()
-        clock.tick(10)
