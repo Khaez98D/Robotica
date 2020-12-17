@@ -11,7 +11,7 @@ from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 from proyecto.srv import *
 from tools import Tools
-from std_msgs.msg import Float32MultiArray, Float32
+from std_msgs.msg import Float32MultiArray, Float32,String
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 PATHPLANO = r'/home/robotica/catkin_ws/src/proyecto/docs/Gridmap.png'  # Path a la imagen del plano
@@ -129,15 +129,15 @@ class aprilTag:
     '''
 
     def __init__(self, GUI):
-        rospy.Subscriber('/senecabot_tag', Float32)
+        rospy.Subscriber('/senecabot_tag', String)
         self.GUI = GUI
-        self.tag = 0
+        self.tag = ''
 
     def callbackTag(self, data):
         tag = data.data
         if tag != self.tag:
             self.tag = tag
-            self.GUI.updateAprilTag(str(tag))
+            self.GUI.updateAprilTag(tag)
 
 class contador_monedas:
 
@@ -146,15 +146,15 @@ class contador_monedas:
     '''
 
     def __init__(self, GUI):
-        rospy.Subscriber('/senecabot_coins', Float32)
+        rospy.Subscriber('/senecabot_coins', String)
         self.GUI = GUI
-        self.coin = 0
+        self.coin = ''
 
     def callbackTag(self, data):
         coin = data.data
         if coin != self.coin:
-            self.coin+=coin
-            self.GUI.updateCoinCount(str(self.coin))
+            self.coin=coin
+            self.GUI.updateCoinCount(coin)
 
 class cv2manager:
 
@@ -331,6 +331,7 @@ class GUI_manager:
 
 
 if __name__ == '__main__':
+    pygame.init()
     print 'SENECABOT GRUPO 4'
     rospy.init_node('GUI_node')
     print '==============================='
@@ -339,10 +340,10 @@ if __name__ == '__main__':
     gridmap = cv2manager.img / 255
     is_running = True
     print("Se iniciara la interfaz")
-    pygame.init()
     pointsService = servicioPuntos(puntos)
     guiManager = GUI_manager(cv2manager.shape, puntos)
     aprilTagManager = aprilTag(guiManager)
+    coinManager = contador_monedas(guiManager)
     visitadosManager = nodosVisitado(guiManager)
     nodosRuta = nodosRuta(guiManager)
     ubiacionManager = ubicaion(guiManager,puntos[0])
