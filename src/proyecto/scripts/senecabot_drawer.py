@@ -5,11 +5,10 @@ import numpy as np
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
-import time;
 
 class controlNode():
     
-    def __init__(self,K,posF):
+    def __init__(self,K,posF, escala):
         """Metodo Creacion del Nodo
         Args:
             K ([int]): Arreglo con las constantes de control
@@ -17,16 +16,19 @@ class controlNode():
         """
 
         #Nombre del Nodo
-        self.nombre = 'Senecabot_Controller'
+        self.nombre = 'Senecabot_drawer'
+
+        #Escala de la imagen
+        self.scale = escala;
 
         #TPublisher
         self.pub = rospy.Publisher('cmd_vel',Twist,queue_size=70)
         rospy.Subscriber('odom',Odometry,self.odomCallBack)
 
         #Posicion del robot. X y Y son lineares. Z es angular
-        self.x = []
-        self.y = []
-        self.z = []
+        self.x = [0]
+        self.y = [0]
+        self.z = [0]
         self.c = 1;
 
         #Constantes para control del robot
@@ -37,8 +39,8 @@ class controlNode():
         self.end = False
 
 
-        assert len(posF)==3,"La posición final no tiene 3 entradas"
-        assert all(isinstance(x,(float,int)) for x in posF),"Los datos ingresados no son numericos"
+        #assert len(posF)==3,"La posición final no tiene 3 entradas"
+        #assert all(isinstance(x,(float,int)) for x in posF),"Los datos ingresados no son numericos"
         
         '''
         Z=0
@@ -52,7 +54,8 @@ class controlNode():
 
         posF.append(Z)
         '''
-        self.posF=posF
+        self.posFS = posF;
+        self.posF = [];
         self.estadoDir = 1;
         self.antDist = 100;
         self.antAng = 100;
@@ -67,12 +70,20 @@ class controlNode():
         """
         rospy.loginfo("Se iniciara el Nodo")
         rospy.init_node(self.nombre,anonymous=True)       #Inicializacion del Nodo
-        self.rate= rospy.Rate(3);
+        self.rate = rospy.Rate(8)
 
-        #En este loop se ejecuta el algoritmo de control
-        while not (rospy.is_shutdown() or self.end):
-            self.control()
-            self.rate.sleep()
+        for p in self.posFS:
+            self.posF = [float(i)/self.scale for i in p.replace('[','').replace(']','').split(',')];      
+            for idx,val in enumerate(self.posF):
+                if idx%2==0 and idx>1:
+                    self.posF[idx]=np.pi/2
+            print(self.posF);
+            
+            #En este loop se ejecuta el algoritmo de control
+            while not (rospy.is_shutdown() and not self.end):
+                self.control()
+                self.rate.sleep()
+            self.end = False;
 
         print("Termino la ejecucion");   #Notificación a consola
 
@@ -140,14 +151,28 @@ class controlNode():
 
 if __name__=='__main__':
     try:
-        if len(sys.argv)==2:
-            posF = [float(i) for i in sys.argv[1].replace('[','').replace(']','').split(',')]
-            K = [2,3.2]
-            nodo = controlNode(K,posF)
-            nodo()
+        posFS = [];
+        K = [2.5,1.5];
+        escala = 0.5;
+
+        if len(sys.argv) > 1:
+            posFS = sys.argv[1].split(";");
         else:
-            raise ValueError()
+            print("Qué figura quiere dibujar? \n Pez \n Toro \n");
+            file = raw_input("Ingrese la figura: ").lower() + ".txt";
+            name = 'senecabot_drawer.py';
+            path = os.path.abspath(__file__).replace("scripts"+os.path.sep+name, "docs"+os.path.sep+file);
+            f = open(path, "r");
+            posFS = f.read().split(";");
+
+        nodo = controlNode(K, posFS, escala);
+        nodo();
+
     except ValueError:
         print('No se ingreso coordenadas Finales');
     except AssertionError:
         print('Error de Precondiciones');
+        raise
+    except:
+        print("No ingrsó una figura correcta");
+        raise
