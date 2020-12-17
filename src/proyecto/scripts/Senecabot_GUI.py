@@ -136,7 +136,25 @@ class aprilTag:
     def callbackTag(self, data):
         tag = data.data
         if tag != self.tag:
+            self.tag = tag
             self.GUI.updateAprilTag(str(tag))
+
+class contador_monedas:
+
+    '''
+    Clase para determinar el april tag
+    '''
+
+    def __init__(self, GUI):
+        rospy.Subscriber('/senecabot_coins', Float32)
+        self.GUI = GUI
+        self.coin = 0
+
+    def callbackTag(self, data):
+        coin = data.data
+        if coin != self.coin:
+            self.coin+=coin
+            self.GUI.updateCoinCount(str(self.coin))
 
 class cv2manager:
 
@@ -188,7 +206,8 @@ class GUI_manager:
         '''
         image = pygame.image.load(PATHPLANO)    #Se carga el plano como imagen
         
-        self.tag = '0'  #Valor inicial del taag
+        self.tag = '0'  #Valor inicial del tag
+        self.coin = '0'
         (self.h, self.w) = shape    #Se obtiene el tamaño del plano
         self.isPainted = [[False for j in range(self.w)] for i in range(self.h)]   #Matriz para no sobreponer pintura de visitados y ruta
         
@@ -250,6 +269,16 @@ class GUI_manager:
         tag = self.myfont.render(self.tag, False, self.black)
         self.screen.blit(tag, (i, j + 30))
         pygame.display.update()
+
+        self.myfont = pygame.font.SysFont('Comic Sans MS', 20)
+        (i, j) = (self.w * 1.025, int(self.h / 2))
+        coinH = self.myfont.render('Monedas Actuales:', True, self.black)
+        self.screen.blit(coinH, (i, j))
+        self.myfont = pygame.font.SysFont('Comic Sans MS', 50)
+        (i, j) = (self.w * 1.025, int(self.h / 2))
+        coin = self.myfont.render(self.coin, False, self.black)
+        self.screen.blit(coin, (i, j + 30))
+        pygame.display.update()
         
     def updateAprilTag(self, newValue):
         '''
@@ -257,6 +286,17 @@ class GUI_manager:
         '''
         self.tag = newValue
         (i, j) = (self.w * 1, int(self.h / 4))
+        self.screen.fill(self.white,(i,j+30,50,50))  
+        tag = self.myfont.render(self.tag, False, self.black)
+        self.screen.blit(tag, (i, j + 30))
+        pygame.display.update()
+
+    def updateCoinCount(self, newValue):
+        '''
+        Funcion para actualizar el valor del April Tag de pantalla
+        '''
+        self.tag = newValue
+        (i, j) = (self.w * 1, int(self.h / 2))
         self.screen.fill(self.white,(i,j+30,50,50))  
         tag = self.myfont.render(self.tag, False, self.black)
         self.screen.blit(tag, (i, j + 30))
