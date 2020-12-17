@@ -59,7 +59,6 @@ class controlNode():
         self.estadoDir = 1;
         self.antDist = 100;
         self.antAng = 100;
-        self.antTime = 0;
         self.antVel = 0;
         self.controlState = 1;
         return
@@ -74,16 +73,20 @@ class controlNode():
 
         for p in self.posFS:
             self.posF = [float(i)/self.scale for i in p.replace('[','').replace(']','').split(',')];      
-            for idx,val in enumerate(self.posF):
-                if idx%2==0 and idx>1:
-                    self.posF[idx]=np.pi/2
             print(self.posF);
             
             #En este loop se ejecuta el algoritmo de control
             while not (rospy.is_shutdown() and not self.end):
-                self.control()
-                self.rate.sleep()
-            self.end = False;
+                self.control();
+                if self.end:
+                    self.end = False;
+                    self.estadoDir = 1;
+                    self.antDist = 100;
+                    self.antAng = 100;
+                    self.antVel = 0;
+                    self.controlState = 1;
+                    break;
+                self.rate.sleep();
 
         print("Termino la ejecucion");   #Notificación a consola
 
@@ -116,6 +119,8 @@ class controlNode():
 
         #print('Pose actual')
         #print(X,Y,Z)
+
+        print(self.controlState);
 
         if(abs(beta)>=0.08 and self.controlState == 1):
             if(beta == self.antAng):
@@ -156,7 +161,12 @@ if __name__=='__main__':
         escala = 0.5;
 
         if len(sys.argv) > 1:
-            posFS = sys.argv[1].split(";");
+            print(sys.argv[1]);
+            if sys.argv[1] == "ruta":
+                path2 = r'/home/robotica/catkin_ws/src/pruebas/docs/ruta.txt';
+                f = open(path2, "r");
+                posFS = f.read().split(";");
+                escala = 1;
         else:
             print("Qué figura quiere dibujar? \n Pez \n Toro \n");
             file = raw_input("Ingrese la figura: ").lower() + ".txt";

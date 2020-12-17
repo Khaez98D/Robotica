@@ -52,6 +52,8 @@ def app(griFile):
 	if START and END and not terminoRuta:
 		print("Calculando ruta, por favor espere...")
 		ruta = Astar(graph, START, END, gridmap, gridmapN, probFree,visited_Pub);
+
+		puntosRec = darRectas(ruta, 0.005);
 		
     	#Si ya encontró la ruta se realiza ahora el control de posición punto a punto
 		puntos = darPuntosRuta(ruta,START);
@@ -66,7 +68,7 @@ def app(griFile):
 
 		terminoRuta = True;
 
-	return puntos;
+	return puntosRec;
 
 def gridmapToGraph(gridmap, height, width, maxProbFree):
 	graph = {(i, j): [] for j in range(width) for i in range(height) if gridmap[i][j]<maxProbFree}
@@ -183,6 +185,79 @@ def darPuntosRuta(ruta,start):
 			puntos.append((x,y))
 		return puntos;
 
+def darRectas(ruta, dim):
+	puntos = [];
+	x = 0.0;
+	y = 0.0;
+	if ruta == "NO HAY RUTA":
+		raise NameError('HiThere');
+	else:
+		i = 0;
+		while i < len(ruta):
+			l = ruta[i];
+			count = 1;
+			
+			if i+1 < len(ruta) and l == ruta[i+1]:
+				for ls in range(i,len(ruta)):
+					if ruta[ls] == l:
+						count += 1;
+					else:
+						break;
+
+				if l == 'N':
+					x = x - count*dim;
+				elif l == 'S':
+					x = x + count*dim;
+				elif l == 'W':
+					y = y - count*dim;
+				elif l == 'E':
+					y = y + count*dim;
+
+				i = i + count;
+
+
+			elif i+3 < len(ruta) and ( (l + ruta[i+1]) == (ruta[i+2] + ruta[i+3]) ):
+				ls = i+2;
+				while ls < len(ruta):
+					if ls+1 < len(ruta):
+						if (l + ruta[i+1]) == (ruta[ls] + ruta[ls+1]):
+							count += 1;
+							ls += 2;
+						else:
+							break;
+					else:
+						break;
+
+				if (l + ruta[i+1]) == 'NW':
+					x = x - count*dim;
+					y = y - count*dim;
+				elif (l + ruta[i+1]) == 'NE':
+					x = x - count*dim;
+					y = y + count*dim;
+				elif (l + ruta[i+1]) == 'SW':
+					x = x + count*dim;
+					y = y - count*dim;
+				elif (l + ruta[i+1]) == 'SE':
+					x = x + count*dim;
+					y = y + count*dim;
+
+				i = i + 2*count;
+
+			else:
+				if l == 'N':
+					x = x - count*dim;
+				elif l == 'S':
+					x = x + count*dim;
+				elif l == 'W':
+					y = y - count*dim;
+				elif l == 'E':
+					y = y + count*dim;
+				i += 1;
+
+			puntos.append([x,y,0.0]);
+
+		return puntos;
+
 if __name__ == "__main__":
 	try:
 		rospy.init_node('Navigator_node')
@@ -190,7 +265,10 @@ if __name__ == "__main__":
 		puntos = app(path);
 		puntos = str(puntos).replace("],", "];").replace("[[", "[").replace("]]","]");
 
-		
+		path2 = r'/home/robotica/catkin_ws/src/pruebas/docs/ruta.txt'
+		f = open(path2, "w");
+		f.write(puntos);
+		f.close()
 		
 	except Exception as e:
 		print("ERROR");

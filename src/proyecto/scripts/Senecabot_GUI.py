@@ -114,9 +114,13 @@ class ubicaion:
         tolY = (3/600)*5 #Medida en metros, si se mueve más de tolY, se actualiza la interfaz con un corrimiento de 5 pixeles
                             #Valor calculado como: (LonguitudYReal/HeightImagen) * numPixelesCorrimiento
         (X,Y) = pose.position.x+self.start[0],pose.position.y+self.start[1] #Se suma las coordenadas del comienzo a la distancia recorrida
-        if abs(X-self.x)>=tolx or abs(Y-self.y)>=tolY:
+        
+        """
+        if abs(X-self.x)>=tolX or abs(Y-self.y)>=tolY:
             (self.x,self.y)=(X,Y)
             self.GUI.updatePos((int(Y),int(X)))     #Se aproxima al entero más cerano
+        """
+        self.GUI.updatePos((int(Y),int(X)))     #Se aproxima al entero más cerano
 
 class aprilTag:
 
@@ -263,6 +267,7 @@ class GUI_manager:
         Funcion para actualizar la posicion actual
         '''
         (X,Y) = self.posFig.center  #Se obtiene la coordenada anterior
+        print("Ac Odom", X, Y);
         if (Y,X) == self.start: #Si es el comienzo, se pinta de rojo para no dañar la ubicación
             self.posFig = pygame.draw.circle(self.screen,self.red,self.start[::-1],5,width=0)
         else:   #Si no, se pinta la anterior ubicación de blanco
@@ -275,13 +280,13 @@ class GUI_manager:
         '''
         Funcion para pintar las casillas visitadas
         '''
-        self.posFig = pygame.draw.circle(self.screen,self.blue,pos,2,width=0)
+        pygame.draw.circle(self.screen,self.blue,pos,2,width=0)
 
     def nodosRuta(self,pos):
         '''
         Funcion para pintar la ruta
         '''
-        self.posFig = pygame.draw.circle(self.screen,self.orange,pos,2,width=0)
+        pygame.draw.circle(self.screen,self.orange,pos,2,width=0)
         
 
 
