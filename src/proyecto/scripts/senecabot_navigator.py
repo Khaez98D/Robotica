@@ -84,38 +84,44 @@ def heuristic(acc, end, gridmap, probFree):
 	return ( (acc[0] - end[0])**2 + (acc[1] - end[1])**2 )**(1/2) - distanciaAObstaculo(acc, gridmap, probFree);
 
 def distanciaAObstaculo(acc, gridmapN, probFree):
-	row, col = acc;
-	height, width = gridmapN.shape;
-	dst = [0,0,0,0];
-	for r in range(row, row+100):
-		if r < height - 1:
-			if gridmapN[r + 1][col]<probFree:
-				dst[0] += gridmapN[r + 1][col]*50;
-			else:
-				break;
+    row, col = acc;
+    height, width = gridmapN.shape;
+    dst = [0,0,0,0];
+    for r in range(row, row+100):
+        if r < height - 1:
+            if gridmapN[r + 1][col]<probFree:
+                #print(gridmapN[r + 1][col]*50);
+                dst[0] += gridmapN[r + 1][col] + 1;
+            else:
+                break;
 
-	for r in range(row, row-100, -1):
-		if r - 1 > 0:
-			if gridmapN[r - 1][col]<probFree:
-				dst[1] += gridmapN[r - 1][col]*50;
-			else:
-				break;
+    for r in range(row, row-100, -1):
+        if r - 1 > 0:
+            if gridmapN[r - 1][col]<probFree:
+                #print(gridmapN[r - 1][col]*50);
+                dst[1] += gridmapN[r - 1][col] + 1;
+            else:
+                break;
 
-	for c in range(col, col+100):
-		if c + 1 < width:
-			if gridmapN[row][c+1]<probFree:
-				dst[2] += gridmapN[row][c+1]*50;
-			else:
-				break;
+    for c in range(col, col+100):
+        if c + 1 < width:
+            if gridmapN[row][c+1]<probFree:
+                #print(gridmapN[row][c+1]*50);
+                dst[2] += gridmapN[row][c+1] + 1;
+            else:
+                break;
 
-	for c in range(col, col-100, -1):
-		if c - 1 > 0:
-			if gridmapN[row][c-1]<probFree:
-				dst[3] += gridmapN[row][c]*50;
-			else:
-				break;
+    for c in range(col, col-100, -1):
+        if c - 1 > 0:
+            if gridmapN[row][c-1]<probFree:
+                #print(gridmapN[row][c]*50);
+                dst[3] += gridmapN[row][c] + 1;
+            else:
+                break;
 
-	return min(dst);
+    if( min(dst) < 40):
+        return -70; 
+    return min(dst);
 
 def Astar(graph, START, END, gridmap, gridmapN, probFree,publisher):
 	nodos = [];
