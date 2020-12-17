@@ -142,7 +142,7 @@ class aprilTag:
 class contador_monedas:
 
     '''
-    Clase para determinar el april tag
+    Clase para determinar la cuenta de monedas
     '''
 
     def __init__(self, GUI):
